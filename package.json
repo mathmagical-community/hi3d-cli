@@ -12,7 +12,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsc -b packages/core packages/mcp packages/cli",
+    "build": "node scripts/ensure-constants.mjs && tsc -b packages/core packages/mcp packages/cli",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo release",
     "test": "bash test/run-e2e.sh",
     "release": "node scripts/build-release.mjs",
