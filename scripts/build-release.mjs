@@ -30,7 +30,7 @@ await build({
   minify: false,
   sourcemap: false,
   legalComments: 'none',
-  // CJS deps (commander, tos-sdk, axios…) need `require` inside an ESM bundle
+  // CJS deps (commander, …) need `require` inside an ESM bundle
   banner: {
     js: [
       '#!/usr/bin/env node',
@@ -45,7 +45,7 @@ await build({
     'process.env.HI3D_NPM_NAME': JSON.stringify(npmName),
     // optional build-time injection of site constants (kept out of git): HI3D_WEB_APPID, HI3D_WEB_PASSWORD_KEY, HI3D_TOS_*
     ...Object.fromEntries(
-      ['HI3D_WEB_CONSTANTS_JSON', 'HI3D_WEB_APPID', 'HI3D_WEB_PASSWORD_KEY', 'HI3D_TOS_REGION', 'HI3D_TOS_ENDPOINT', 'HI3D_TOS_BUCKET', 'HI3D_TOS_ASSET_HOST']
+      ['HI3D_WEB_CONSTANTS_JSON', 'HI3D_WEB_APPID', 'HI3D_WEB_PASSWORD_KEY', 'HI3D_STORE_REGION', 'HI3D_STORE_ENDPOINT', 'HI3D_STORE_BUCKET', 'HI3D_STORE_ASSET_HOST']
         .filter((k) => process.env[k])
         .map((k) => [`process.env.${k}`, JSON.stringify(process.env[k])]),
     ),

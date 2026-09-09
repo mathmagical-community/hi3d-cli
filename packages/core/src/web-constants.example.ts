@@ -26,8 +26,19 @@ export const WEB_CONSTANTS = {
     batchResult: '',
     pendingJobs: '',
   },
-  /** object-storage target for image uploads */
-  tos: { region: '', endpoint: '', bucket: '', assetHostBase: '' },
+  /** object-storage target for image uploads (SigV4-style signed PUT) */
+  store: {
+    region: '',
+    /** e.g. s3.example.com — the bucket is used as a subdomain */
+    endpoint: '',
+    bucket: '',
+    /** public base URL where uploaded objects can be read back */
+    assetHostBase: '',
+    /** object key prefix, e.g. uploads/ */
+    keyPrefix: '',
+    /** signing scheme, e.g. { algorithm: 'AWS4-HMAC-SHA256', service: 's3', headerPrefix: 'x-amz-', secretPrefix: 'AWS4' } */
+    signing: { algorithm: '', service: '', headerPrefix: '', secretPrefix: '' },
+  },
 };
 
 export type WebConstants = typeof WEB_CONSTANTS;

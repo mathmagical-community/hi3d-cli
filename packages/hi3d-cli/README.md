@@ -20,7 +20,7 @@ hi3d-cli image_to_3d ./cat.png --format glb --poll --download --out ./out
 | Open Platform AK/SK | `hi3d-cli login --mode ak --ak <AK> --sk <SK>` | Create keys at https://platform.hi3d.ai/console/apiKey. Pay-as-you-go, all commands. |
 | hi3d.ai account | `hi3d-cli login --mode web --account you@example.com` | Same credits as the website. Password is prompted (hidden); `--cookie` pastes a browser cookie instead. Requires site constants, see [Web mode](#web-mode). |
 
-Profiles work like `ve configure` / `aws configure`:
+Profiles work like `aws configure`:
 
 ```bash
 hi3d-cli configure list | get [name] | set -p <name> --mode ak --ak … --sk … | delete <name> | profile <name>

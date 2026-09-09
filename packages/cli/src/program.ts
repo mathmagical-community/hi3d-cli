@@ -9,7 +9,7 @@ import { TOOLS, listTools, makeContext, runStdio, runHttp } from '@hi3d/mcp';
 import { registerAuthCommands } from './auth-cmds.js';
 import { checkForUpdate } from './update-check.js';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.0.1';
 /** npm package name used for the update hint; overridden at release build via NPM_PACKAGE_NAME */
 export const PACKAGE_NAME = process.env.HI3D_NPM_NAME ?? 'hi3d-cli';
 

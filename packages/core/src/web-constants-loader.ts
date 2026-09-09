@@ -6,7 +6,7 @@ export function loadWebConstants(): WebConstants {
   if (raw) {
     try {
       const j = JSON.parse(raw) as Partial<WebConstants>;
-      return { ...FILE_CONSTANTS, ...j, paths: { ...FILE_CONSTANTS.paths, ...(j.paths ?? {}) }, tos: { ...FILE_CONSTANTS.tos, ...(j.tos ?? {}) } };
+      return { ...FILE_CONSTANTS, ...j, paths: { ...FILE_CONSTANTS.paths, ...(j.paths ?? {}) }, store: { ...FILE_CONSTANTS.store, ...(j.store ?? {}), signing: { ...FILE_CONSTANTS.store.signing, ...(j.store?.signing ?? {}) } } };
     } catch {
       /* ignore malformed env */
     }

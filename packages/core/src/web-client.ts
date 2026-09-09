@@ -4,8 +4,8 @@
  *
  * Auth: cookie session. `hi3d-cli login --mode web` obtains it by POSTing account+password
  * (password encrypted the same way the web app does) to the site login endpoint, or by pasting a cookie.
- * Uploads go straight to Volcengine TOS with a temporary STS token (like the web app), or
- * through the sandbox proxy's /hi3d-upload route when running inside a VM.
+ * Uploads go straight to the site's object storage with a temporary token (like the web app does),
+ * using a generic SigV4-style signed PUT (algorithm/service names come from the site constants).
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -30,12 +30,14 @@ const PASSWORD_AES_KEY = process.env.HI3D_WEB_PASSWORD_KEY ?? WEB_CONSTANTS.pass
 /** Endpoint paths of the site (configured, not hard-coded; see web-constants.example.ts). */
 export const WEB_PATHS = WEB_CONSTANTS.paths;
 
-/** Object-storage target for image uploads (override with HI3D_TOS_* env). */
-export const TOS_DEFAULTS = {
-  region: process.env.HI3D_TOS_REGION ?? WEB_CONSTANTS.tos.region,
-  endpoint: process.env.HI3D_TOS_ENDPOINT ?? WEB_CONSTANTS.tos.endpoint,
-  bucket: process.env.HI3D_TOS_BUCKET ?? WEB_CONSTANTS.tos.bucket,
-  assetHostBase: process.env.HI3D_TOS_ASSET_HOST ?? WEB_CONSTANTS.tos.assetHostBase,
+/** Object-storage target for image uploads (override with HI3D_STORE_* env). */
+export const STORE_DEFAULTS = {
+  region: process.env.HI3D_STORE_REGION ?? WEB_CONSTANTS.store.region,
+  endpoint: process.env.HI3D_STORE_ENDPOINT ?? WEB_CONSTANTS.store.endpoint,
+  bucket: process.env.HI3D_STORE_BUCKET ?? WEB_CONSTANTS.store.bucket,
+  assetHostBase: process.env.HI3D_STORE_ASSET_HOST ?? WEB_CONSTANTS.store.assetHostBase,
+  /** SigV4-style signing parameters, e.g. { algorithm: 'AWS4-HMAC-SHA256', service: 's3', headerPrefix: 'x-amz-' } */
+  signing: WEB_CONSTANTS.store.signing,
 };
 
 export function encryptWebPassword(pw: string): string {
@@ -317,27 +319,30 @@ export class Hi3DWebClient {
       if (!res.ok || !j.url) throw new Hi3DError(`upload via proxy failed: ${j.error ?? res.status}`, { code: 'UPLOAD_FAILED', status: res.status });
       return j.url;
     }
-    return this.uploadToTos(buf, ext);
+    return this.uploadToStore(buf, ext);
   }
 
-  /** Direct upload to Volcengine TOS with a temporary token from the site (what the web app does). */
-  async uploadToTos(buf: Buffer, ext: string): Promise<string> {
+  /** Direct upload to the site's object storage with a temporary token from the site (what the web app does). */
+  async uploadToStore(buf: Buffer, ext: string): Promise<string> {
     const tok = (await this.request<Record<string, string>>('GET', WEB_PATHS.tosTempToken)).data ?? {};
     const accessKeyId = tok.accessKeyId ?? tok.AccessKeyId;
-    const accessKeySecret = tok.secretAccessKey ?? tok.SecretAccessKey ?? tok.accessKeySecret;
-    const stsToken = tok.sessionKey ?? tok.sessionToken ?? tok.SessionToken;
-    if (!accessKeyId || !accessKeySecret) throw new Hi3DError('tos-temp-token response missing keys', { code: 'TOS_TOKEN', details: Object.keys(tok) });
-    if (!TOS_DEFAULTS.bucket && !tok.bucket) throw new Hi3DError('upload target is not configured in this build (HI3D_TOS_* / web-constants.ts)', { code: 'WEB_NOT_CONFIGURED' });
+    const secretKey = tok.secretAccessKey ?? tok.SecretAccessKey ?? tok.accessKeySecret;
+    const sessionToken = tok.sessionKey ?? tok.sessionToken ?? tok.SessionToken;
+    if (!accessKeyId || !secretKey) throw new Hi3DError('upload token response missing keys', { code: 'UPLOAD_TOKEN', details: Object.keys(tok) });
     const cfg = {
-      region: tok.region ?? TOS_DEFAULTS.region,
-      endpoint: tok.endpoint ?? TOS_DEFAULTS.endpoint,
-      bucket: tok.bucket ?? TOS_DEFAULTS.bucket,
-      assetHostBase: tok.assetHostBase ?? tok.cdnHost ?? TOS_DEFAULTS.assetHostBase,
+      region: tok.region ?? STORE_DEFAULTS.region,
+      endpoint: tok.endpoint ?? STORE_DEFAULTS.endpoint,
+      bucket: tok.bucket ?? STORE_DEFAULTS.bucket,
+      assetHostBase: tok.assetHostBase ?? tok.cdnHost ?? STORE_DEFAULTS.assetHostBase,
     };
-    const { TosClient } = await import('@volcengine/tos-sdk');
-    const client = new TosClient({ region: cfg.region, endpoint: cfg.endpoint, accessKeyId, accessKeySecret, stsToken, bucket: cfg.bucket });
-    const key = `FE/static/img/${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
-    await client.putObject({ bucket: cfg.bucket, key, body: buf });
+    const sig = STORE_DEFAULTS.signing;
+    if (!cfg.bucket || !cfg.endpoint || !sig?.algorithm) throw new Hi3DError('upload target is not configured in this build (HI3D_STORE_* / web-constants.ts)', { code: 'WEB_NOT_CONFIGURED' });
+    const key = `${(WEB_CONSTANTS.store.keyPrefix ?? 'uploads/').replace(/^\/+|\/+$/g, '')}/${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
+    const host = `${cfg.bucket}.${cfg.endpoint}`;
+    const url = `https://${host}/${key}`;
+    const headers = signedPutHeaders({ host, path: `/${key}`, body: buf, region: cfg.region, accessKeyId, secretKey, sessionToken, contentType: mimeOfExt(ext), ...sig });
+    const res = await this.fetchImpl(url, { method: 'PUT', headers, body: new Uint8Array(buf) as never });
+    if (!res.ok) throw new Hi3DError(`upload failed: HTTP ${res.status} ${(await res.text()).slice(0, 300)}`, { code: 'UPLOAD_FAILED', status: res.status });
     return `${cfg.assetHostBase.replace(/\/+$/, '')}/${key}`;
   }
 
@@ -456,4 +461,59 @@ function mapResolution(res: string): string {
   if (/pro/.test(res)) return 'pro';
   if (/fast/.test(res)) return 'fast';
   return res;
+}
+
+// ---------- SigV4-style request signing (algorithm / service / header prefix are configurable) ----------
+
+export interface SigningParams {
+  algorithm: string;
+  service: string;
+  headerPrefix: string;
+  /** string prepended to the secret key when deriving the signing key ('AWS4' for S3; some providers use none) */
+  secretPrefix?: string;
+}
+
+function sha256Hex(data: Buffer | string): string {
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+function hmac(key: Buffer | string, data: string): Buffer {
+  return crypto.createHmac('sha256', key).update(data).digest();
+}
+
+/** Headers for a signed PUT of `body` to https://host/path using a SigV4-style scheme. */
+export function signedPutHeaders(o: { host: string; path: string; body: Buffer; region: string; accessKeyId: string; secretKey: string; sessionToken?: string; contentType: string } & SigningParams): Record<string, string> {
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const dateStamp = amzDate.slice(0, 8);
+  const px = o.headerPrefix;
+  const payloadHash = sha256Hex(o.body);
+  const headers: Record<string, string> = {
+    host: o.host,
+    'content-type': o.contentType,
+    [`${px}content-sha256`]: payloadHash,
+    [`${px}date`]: amzDate,
+  };
+  if (o.sessionToken) headers[`${px}security-token`] = o.sessionToken;
+  const signedHeaderNames = Object.keys(headers).sort();
+  const canonicalHeaders = signedHeaderNames.map((k) => `${k}:${headers[k].trim()}\n`).join('');
+  const signedHeaders = signedHeaderNames.join(';');
+  const canonicalRequest = ['PUT', encodePath(o.path), '', canonicalHeaders, signedHeaders, payloadHash].join('\n');
+  const scope = `${dateStamp}/${o.region}/${o.service}/request`;
+  const stringToSign = [o.algorithm, amzDate, scope, sha256Hex(canonicalRequest)].join('\n');
+  const kDate = hmac((o.secretPrefix ?? '') + o.secretKey, dateStamp);
+  const kRegion = hmac(kDate, o.region);
+  const kService = hmac(kRegion, o.service);
+  const kSigning = hmac(kService, 'request');
+  const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
+  const auth = `${o.algorithm} Credential=${o.accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  const { host: _h, ...rest } = headers;
+  return { ...rest, authorization: auth, 'content-length': String(o.body.length) };
+}
+
+function encodePath(p: string): string {
+  return p.split('/').map((seg) => encodeURIComponent(seg).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase())).join('/');
+}
+
+function mimeOfExt(ext: string): string {
+  return { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' }[ext.toLowerCase()] ?? 'application/octet-stream';
 }

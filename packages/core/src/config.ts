@@ -1,5 +1,5 @@
 /**
- * Profile-based configuration, modelled on the Volcengine CLI (`ve configure`):
+ * Profile-based configuration (like `aws configure`):
  *   ~/.hi3d/config.json = { current: "default", profiles: { <name>: Profile } }
  *
  * Two credential modes:

@@ -1,5 +1,5 @@
 /**
- * `hi3d login` / `hi3d logout` / `hi3d configure ...` — modelled on the Volcengine CLI.
+ * `hi3d-cli login` / `hi3d-cli logout` / `hi3d-cli configure ...` — profile handling like `aws configure`.
  *   hi3d login                       interactive: pick mode, enter keys or account
  *   hi3d login --mode ak --ak <AK> --sk <SK> [--profile name] [--endpoint url]
  *   hi3d login --mode web --account <email> [--password <pw>]     (transition path B)
@@ -145,7 +145,7 @@ export function registerAuthCommands(program: Command, emit: Emit, fail: Fail) {
       emit({ removed: clearCredentials(name), profile: name, config: configPath() });
     });
 
-  const conf = program.command('configure').description('Manage profiles (like `ve configure`)');
+  const conf = program.command('configure').description('Manage profiles (like `aws configure`)');
   conf
     .command('list')
     .description('List profiles')
