@@ -23,4 +23,4 @@ jobs:
         env: { NODE_AUTH_TOKEN: '${{ secrets.NPM_TOKEN }}' }
       - run: cd release && npm pack ./hi3d-cli
       - uses: softprops/action-gh-release@v2
-        with: { files: 'release/hi3d-cli-*.tgz', generate_release_notes: true }
+        with: { files: 'release/*.tgz', generate_release_notes: true }

@@ -39,7 +39,7 @@ $H who_am_i | j "assert d['body']['authMode']=='web_session' and d['body']['bala
 $H image_to_3d https://example.com/x.png --poll --download --out "$TMP/out-web" 2>/dev/null | j "assert d['body']['state']=='success' and d['body']['files']['model']; print('image_to_3d web ok')"
 { $H split_model x.glb || true; } | j "assert d['error']['code']=='UNSUPPORTED_WEB'; print('web unsupported guard ok')"
 $H configure profile default | j "assert d['body']['current']=='default'; print('profile switch ok')"
-{ env -u HI3D_WEB_CONSTANTS_JSON $H login --mode web --account a@b.c --password x --endpoint http://127.0.0.1:9 --profile none 2>/dev/null || true; } | j "assert d['error']['code']=='WEB_NOT_CONFIGURED'; print('web not-configured guard ok')"
+{ HI3D_WEB_CONSTANTS_JSON='{"appid":"","passwordKey":""}' $H login --mode web --account a@b.c --password x --endpoint http://127.0.0.1:9 --profile none 2>/dev/null || true; } | j "assert d['error']['code']=='WEB_NOT_CONFIGURED'; print('web not-configured guard ok')"
 
 echo "## MCP stdio"
 MCP_OUT="$(HI3D_BASE_URL=http://127.0.0.1:8790 IMG="$TMP/input.png" node test/mcp-stdio-smoke.mjs 2>"$TMP/mcp.err")"
