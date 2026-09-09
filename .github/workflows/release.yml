@@ -19,8 +19,10 @@ jobs:
           NPM_PACKAGE_NAME: ${{ vars.NPM_PACKAGE_NAME }}
           # optional: bake site constants for `--mode web` into the published bundle
           HI3D_WEB_CONSTANTS_JSON: ${{ secrets.HI3D_WEB_CONSTANTS_JSON }}
+      # Trusted Publishing (OIDC): register this repo + workflow as a trusted publisher in the npm package
+      # settings, then no NPM_TOKEN is needed. npm >= 11.5 is required for OIDC publishing.
+      - run: npm install -g npm@latest
       - run: cd release/hi3d-cli && npm publish --access public --provenance
-        env: { NODE_AUTH_TOKEN: '${{ secrets.NPM_TOKEN }}' }
       - run: cd release && npm pack ./hi3d-cli
       - uses: softprops/action-gh-release@v2
         with: { files: 'release/*.tgz', generate_release_notes: true }

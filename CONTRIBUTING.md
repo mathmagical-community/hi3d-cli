@@ -25,5 +25,6 @@ To try against the real API, log in with your own keys (`hi3d-cli login`) and ne
 ## Releasing
 
 Bump `version` in `packages/hi3d-cli/package.json` and `VERSION` in `packages/cli/src/program.ts`, update `CHANGELOG.md`,
-then push a tag `vX.Y.Z`. GitHub Actions runs the OS × Node matrix and publishes to npm. Set the repository variable
+then push a tag `vX.Y.Z`. GitHub Actions publishes to npm via Trusted Publishing (OIDC): register this repository
+and `release.yml` as a trusted publisher in the npm package settings once; no token secret is needed. Set the repository variable
 `NPM_PACKAGE_NAME` (e.g. `@hi3d/hi3d-cli`) to publish under a scoped name; leave it unset to publish `hi3d-cli`.
