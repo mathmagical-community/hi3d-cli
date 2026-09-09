@@ -22,7 +22,14 @@ jobs:
       # Trusted Publishing (OIDC): register this repo + workflow as a trusted publisher in the npm package
       # settings, then no NPM_TOKEN is needed. npm >= 11.5 is required for OIDC publishing.
       - run: npm install -g npm@latest
-      - run: cd release/hi3d-cli && npm publish --access public --provenance
+      - name: skip npm publish if this version already exists
+        id: exists
+        run: |
+          NAME=$(node -p "require('./release/hi3d-cli/package.json').name")
+          VER=$(node -p "require('./release/hi3d-cli/package.json').version")
+          if npm view "$NAME@$VER" version >/dev/null 2>&1; then echo "published=true" >> "$GITHUB_OUTPUT"; echo "$NAME@$VER already on npm, skipping publish"; else echo "published=false" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.exists.outputs.published == 'false'
+        run: cd release/hi3d-cli && npm publish --access public --provenance
       - run: cd release && npm pack ./hi3d-cli
       - uses: softprops/action-gh-release@v2
         with: { files: 'release/*.tgz', generate_release_notes: true }
