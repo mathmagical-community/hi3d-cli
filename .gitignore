@@ -1,0 +1,11 @@
+node_modules/
+packages/*/dist/
+packages/*/tsconfig.tsbuildinfo
+release/
+*.tgz
+*.log
+hi3d-out/
+packages/core/src/web-constants.ts
+.env
+.env.*
+.DS_Store

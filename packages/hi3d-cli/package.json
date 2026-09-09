@@ -1,0 +1,29 @@
+{
+  "name": "hi3d-cli",
+  "version": "1.0.0",
+  "description": "Hi3D image-to-3D from the terminal and for AI agents (Claude Code, Codex, Cursor): login with Open Platform AK/SK or a hi3d.ai account, generate, poll, download, split, relief, multicolor; MCP server included.",
+  "license": "MIT",
+  "homepage": "https://github.com/mathmagical-community/hi3d-cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mathmagical-community/hi3d-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mathmagical-community/hi3d-cli/issues"
+  },
+  "keywords": [
+    "hi3d",
+    "3d",
+    "image-to-3d",
+    "cli",
+    "mcp",
+    "agent",
+    "claude-code",
+    "codex",
+    "3d-printing"
+  ],
+  "private": true,
+  "scripts": {
+    "build": "node ../../scripts/build-release.mjs"
+  }
+}

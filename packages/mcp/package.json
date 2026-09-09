@@ -1,0 +1,19 @@
+{
+  "name": "@hi3d/mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "hi3d-mcp": "dist/main.js"
+  },
+  "dependencies": {
+    "@hi3d/core": "1.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.0.0"
+  }
+}
