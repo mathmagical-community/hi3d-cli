@@ -1,5 +1,5 @@
 {
-  "name": "hi3d-cli",
+  "name": "@hi3d/hi3d-cli",
   "version": "1.0.1",
   "description": "Hi3D image-to-3D from the terminal and for AI agents (Claude Code, Codex, Cursor): login with Open Platform AK/SK or a hi3d.ai account, generate, poll, download, split, relief, multicolor; MCP server included.",
   "license": "MIT",

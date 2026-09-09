@@ -15,21 +15,23 @@ jobs:
       - run: npm run build && npm test
       - run: npm run release
         env:
-          # repository variable: publish under a scoped name while the bare `hi3d-cli` is unavailable
-          NPM_PACKAGE_NAME: ${{ vars.NPM_PACKAGE_NAME }}
+          # published name; override with a repository variable when the bare `hi3d-cli` name becomes available
+          NPM_PACKAGE_NAME: ${{ vars.NPM_PACKAGE_NAME || '@hi3d/hi3d-cli' }}
           # optional: bake site constants for `--mode web` into the published bundle
           HI3D_WEB_CONSTANTS_JSON: ${{ secrets.HI3D_WEB_CONSTANTS_JSON }}
-      # Trusted Publishing (OIDC): register this repo + workflow as a trusted publisher in the npm package
-      # settings, then no NPM_TOKEN is needed. npm >= 11.5 is required for OIDC publishing.
-      - run: npm install -g npm@latest
+      - run: cd release && npm pack ./hi3d-cli
+      - name: GitHub Release with the packed tarball
+        uses: softprops/action-gh-release@v2
+        with: { files: 'release/*.tgz', generate_release_notes: true }
       - name: skip npm publish if this version already exists
         id: exists
         run: |
           NAME=$(node -p "require('./release/hi3d-cli/package.json').name")
           VER=$(node -p "require('./release/hi3d-cli/package.json').version")
           if npm view "$NAME@$VER" version >/dev/null 2>&1; then echo "published=true" >> "$GITHUB_OUTPUT"; echo "$NAME@$VER already on npm, skipping publish"; else echo "published=false" >> "$GITHUB_OUTPUT"; fi
+      # Trusted Publishing (OIDC): register this repo + workflow as a trusted publisher in the npm package
+      # settings; no token needed. npm >= 11.5 is required for OIDC publishing.
+      - if: steps.exists.outputs.published == 'false'
+        run: npm install -g npm@latest
       - if: steps.exists.outputs.published == 'false'
         run: cd release/hi3d-cli && npm publish --access public --provenance
-      - run: cd release && npm pack ./hi3d-cli
-      - uses: softprops/action-gh-release@v2
-        with: { files: 'release/*.tgz', generate_release_notes: true }
