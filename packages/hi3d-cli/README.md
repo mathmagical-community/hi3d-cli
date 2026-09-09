@@ -7,7 +7,7 @@ Commands map 1:1 to MCP tools; every command prints one JSON document.
 [中文说明](#中文说明)
 
 ```bash
-npm i -g hi3d-cli          # or run without installing: npx hi3d-cli <command>
+npm i -g @hi3d/hi3d-cli    # or run without installing: npx @hi3d/hi3d-cli <command>
 hi3d-cli login             # 1) Hi3D Open Platform AK/SK   2) hi3d.ai account
 hi3d-cli who_am_i
 hi3d-cli image_to_3d ./cat.png --format glb --poll --download --out ./out
@@ -92,6 +92,9 @@ paths, password scheme key, upload target) are intentionally **not** in this rep
 environment variable (at runtime, or when running `npm run release` to bake them into the bundle). Without them the CLI
 works normally in AK/SK mode and reports `WEB_NOT_CONFIGURED` for web login.
 
+> The bare npm name `hi3d-cli` is currently held by an unrelated publisher; until that is resolved the package
+> is published as `@hi3d/hi3d-cli`. The executable is `hi3d-cli` either way.
+
 ## Development
 
 ```bash
@@ -121,7 +124,7 @@ MIT
 macOS / Windows / Linux 通用，纯 JS，Node ≥ 18。命令名与 MCP 工具名一一对应，输出统一 JSON。
 
 ```bash
-npm i -g hi3d-cli                                  # 或 npx hi3d-cli <command>
+npm i -g @hi3d/hi3d-cli                            # 或 npx @hi3d/hi3d-cli <command>；命令名是 hi3d-cli
 hi3d-cli login --mode ak --ak <AK> --sk <SK>       # 开放平台密钥 https://platform.hi3d.ai/console/apiKey
 hi3d-cli login --mode web --account you@example.com   # hi3d.ai 账号，与网站共用积分
 hi3d-cli who_am_i

@@ -13,6 +13,9 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'release', 'hi3d-cli');
 const cliPkg = JSON.parse(fs.readFileSync(path.join(root, 'packages', 'hi3d-cli', 'package.json'), 'utf8'));
+// The npm package name can be overridden at release time (e.g. a scoped name while the bare name is
+// unavailable): NPM_PACKAGE_NAME=@hi3d/hi3d-cli npm run release. The command stays `hi3d-cli`.
+const npmName = process.env.NPM_PACKAGE_NAME || cliPkg.name;
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'bin'), { recursive: true });
@@ -39,6 +42,7 @@ await build({
     ].join('\n'),
   },
   define: {
+    'process.env.HI3D_NPM_NAME': JSON.stringify(npmName),
     // optional build-time injection of site constants (kept out of git): HI3D_WEB_APPID, HI3D_WEB_PASSWORD_KEY, HI3D_TOS_*
     ...Object.fromEntries(
       ['HI3D_WEB_CONSTANTS_JSON', 'HI3D_WEB_APPID', 'HI3D_WEB_PASSWORD_KEY', 'HI3D_TOS_REGION', 'HI3D_TOS_ENDPOINT', 'HI3D_TOS_BUCKET', 'HI3D_TOS_ASSET_HOST']
@@ -51,7 +55,7 @@ await build({
 fs.chmodSync(path.join(out, 'bin', 'hi3d-cli.mjs'), 0o755);
 
 const pkg = {
-  name: cliPkg.name,
+  name: npmName,
   version: cliPkg.version,
   description: cliPkg.description,
   license: cliPkg.license,
@@ -70,4 +74,4 @@ for (const f of ['README.md', 'LICENSE']) {
   if (fs.existsSync(src)) fs.copyFileSync(src, path.join(out, f));
 }
 const size = fs.statSync(path.join(out, 'bin', 'hi3d-cli.mjs')).size;
-console.log(`release/hi3d-cli ready: ${pkg.name}@${pkg.version}, bin/hi3d-cli.mjs ${(size / 1024).toFixed(0)} KB`);
+console.log(`release/hi3d-cli ready: ${pkg.name}@${pkg.version} (bin: hi3d-cli), bin/hi3d-cli.mjs ${(size / 1024).toFixed(0)} KB`);

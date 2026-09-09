@@ -15,6 +15,8 @@ jobs:
       - run: npm run build && npm test
       - run: npm run release
         env:
+          # repository variable: publish under a scoped name while the bare `hi3d-cli` is unavailable
+          NPM_PACKAGE_NAME: ${{ vars.NPM_PACKAGE_NAME }}
           # optional: bake site constants for `--mode web` into the published bundle
           HI3D_WEB_CONSTANTS_JSON: ${{ secrets.HI3D_WEB_CONSTANTS_JSON }}
       - run: cd release/hi3d-cli && npm publish --access public --provenance
