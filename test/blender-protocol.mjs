@@ -44,7 +44,7 @@ const ok = (m) => console.log(`  ok ${++n} ${m}`);
   assert.throws(() => s.resolve('/etc/passwd'), /outside the workspace/);
   assert.equal(s.resolve('a/b.glb'), path.join(tmp, 'a', 'b.glb'));
   const open = new BlenderSession({ workspace: tmp, confinePaths: false });
-  assert.equal(open.resolve('/x/y.glb'), path.resolve('/x/y.glb'));
+  assert.equal(open.resolve('/x/y.glb'), path.resolve(tmp, '/x/y.glb')); // on Windows a drive-less absolute path takes the workspace's drive
   ok('workspace confinement');
 }
 
