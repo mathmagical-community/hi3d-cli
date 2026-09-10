@@ -44,6 +44,8 @@ export interface Profile {
 export interface Config {
   current: string;
   profiles: Record<string, Profile>;
+  /** pinned Blender backend (`hi3d-cli blender use`): app:/path | python:/path | managed | a path */
+  blender?: string;
 }
 
 /** Legacy shape kept for the Open API client. */

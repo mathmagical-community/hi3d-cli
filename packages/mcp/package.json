@@ -1,6 +1,6 @@
 {
   "name": "@hi3d/mcp",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -12,8 +12,9 @@
     "hi3d-mcp": "dist/main.js"
   },
   "dependencies": {
-    "@hi3d/core": "1.0.0",
+    "@hi3d/core": "2.0.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "@hi3d/blender": "2.0.0"
   }
 }

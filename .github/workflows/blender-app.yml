@@ -1,0 +1,30 @@
+name: blender-app
+# Manual: verify the installed-Blender-app backend on all three OSes (slow: downloads Blender).
+on:
+  workflow_dispatch:
+
+jobs:
+  app:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci && npm run build
+      - if: runner.os == 'Linux'
+        run: sudo snap install blender --classic
+      - if: runner.os == 'macOS'
+        run: brew install --cask blender
+      - if: runner.os == 'Windows'
+        run: winget install --id BlenderFoundation.Blender --accept-source-agreements --accept-package-agreements --silent
+        shell: pwsh
+      - run: node packages/cli/dist/main.js blender status --refresh
+        env: { HI3D_NO_UPDATE_CHECK: '1' }
+      - run: node packages/cli/dist/main.js blender doctor
+        env: { HI3D_NO_UPDATE_CHECK: '1' }
+      - if: runner.os != 'Windows'
+        run: REQUIRE_BLENDER=1 npm run test:blender

@@ -53,6 +53,9 @@ await build({
   logLevel: 'warning',
 });
 fs.chmodSync(path.join(out, 'bin', 'hi3d-cli.mjs'), 0o755);
+// headless Blender executor (2.0): plain Python, resolved from bin/ as ../python/executor.py
+fs.mkdirSync(path.join(out, 'python'), { recursive: true });
+fs.copyFileSync(path.join(root, 'packages', 'blender', 'python', 'executor.py'), path.join(out, 'python', 'executor.py'));
 
 const pkg = {
   name: npmName,
@@ -64,7 +67,7 @@ const pkg = {
   keywords: cliPkg.keywords,
   type: 'module',
   bin: { 'hi3d-cli': 'bin/hi3d-cli.mjs' },
-  files: ['bin', 'README.md', 'LICENSE'],
+  files: ['bin', 'python', 'README.md', 'LICENSE'],
   engines: { node: '>=18' },
   os: ['darwin', 'linux', 'win32'],
 };

@@ -38,3 +38,22 @@ jobs:
         env: { HI3D_NO_UPDATE_CHECK: '1' }
       - run: node release/hi3d-cli/bin/hi3d-cli.mjs status
         env: { HI3D_NO_UPDATE_CHECK: '1' }
+
+  blender-linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: astral-sh/setup-uv@v6
+      - run: npm ci && npm run build
+      - uses: actions/cache@v4
+        with:
+          path: ~/.hi3d/blender/envs
+          key: bpy-5.2-${{ runner.os }}-${{ hashFiles('packages/blender/src/matrix.ts') }}
+      - run: node packages/cli/dist/main.js blender setup --bpy 5.2 --quiet
+        env: { HI3D_NO_UPDATE_CHECK: '1' }
+      - run: node packages/cli/dist/main.js blender status
+        env: { HI3D_NO_UPDATE_CHECK: '1' }
+      - run: REQUIRE_BLENDER=1 npm run test:blender

@@ -34,6 +34,27 @@
 
 - `credits`：可用积分；`usd_equivalent`：按 $0.02/credit 换算。
 
+## blender_load / blender_inspect
+
+- `objects[]`：每个网格对象的 `name`、`vertices`、`faces`、`triangles`、`dimensions_m` / `dimensions_mm`、`materials`、`textures`、`has_uv`、`non_manifold_edges`、`boundary_edges`、`loose_parts`、`is_watertight`、`volume_cm3`（封闭网格）、`modifiers`。
+- `totals`：全场景汇总；`bounds`：`min`/`max`/`center`/`radius`；`session`：session.blend 路径；`welded_vertices`（load）。
+
+## blender_* 编辑类（scale_to_size、center、transform、decimate、repair、split_loose、join、hollow …）
+
+- `before` / `after`：编辑前后的 totals；`repair` 另有 `fixes[]`；`split_loose` 有 `parts[]`；`decimate` 有 `ratio`。
+
+## blender_render_preview
+
+- `images[]`：PNG 路径（`.hi3d/renders/<name>_<view>.png`）；`engine_used`、`seconds`、`samples`、`resolution`。MCP 结果同时携带 image content。
+
+## blender_export
+
+- `path`、`bytes`、`format`、`objects[]`、`next`（可以交给 retexture_model / split_model / multicolor_model）。
+
+## blender status / blender_status
+
+- `ready`；`backend`：`{ kind: app|managed|python, path, blender, python }`；`candidates[]`；`managed_envs[]`；`installable_bpy[]`；`setup_hint`、`app_install_hint`。
+
 ## 错误
 
 `{ ok:false, status, error:{ code, message, details? } }`。常见 code：
@@ -42,4 +63,5 @@
 - `UNSUPPORTED_WEB`：web 模式不支持该命令 → 需要开放平台 AK/SK。
 - `30010000`：余额不足。`10031001`：图片超 20 MB。`10031005`：图片格式不支持。`50010001`：生成失败已退积分。
 - `POLL_TIMEOUT`：等待超时，可继续 `query_task <task_id>`。
+- `BLENDER_NOT_AVAILABLE`：没有可用 Blender → 提示安装 Blender 或（征得同意后）`hi3d-cli blender setup`。`PATH_OUTSIDE_WORKSPACE`：路径越界 → 改用 workspace 内相对路径。`BLENDER_OP_FAILED`：看 message（Python 异常）修正参数或脚本。`BLENDER_TIMEOUT`：大模型操作超时，可提高 `--timeout-s` 或先 decimate。
 - `401` / `login expired`：web 会话过期 → 重新 `hi3d-cli login --mode web`。

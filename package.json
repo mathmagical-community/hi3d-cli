@@ -1,7 +1,7 @@
 {
   "name": "hi3d-cli-monorepo",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "hi3d-cli \u2014 Hi3D image-to-3D CLI and MCP server for terminals and AI agents",
   "license": "MIT",
   "type": "module",
@@ -12,9 +12,10 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "node scripts/ensure-constants.mjs && tsc -b packages/core packages/mcp packages/cli",
+    "build": "node scripts/ensure-constants.mjs && tsc -b packages/core packages/blender packages/mcp packages/cli",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo release",
     "test": "bash test/run-e2e.sh",
+    "test:blender": "bash test/run-blender-e2e.sh",
     "release": "node scripts/build-release.mjs",
     "release:pack": "npm run release && cd release && npm pack ./hi3d-cli"
   },

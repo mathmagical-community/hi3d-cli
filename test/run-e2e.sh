@@ -41,6 +41,16 @@ $H image_to_3d https://example.com/x.png --poll --download --out "$TMP/out-web" 
 $H configure profile default | j "assert d['body']['current']=='default'; print('profile switch ok')"
 { HI3D_WEB_CONSTANTS_JSON='{"appid":"","passwordKey":""}' $H login --mode web --account a@b.c --password x --endpoint http://127.0.0.1:9 --profile none 2>/dev/null || true; } | j "assert d['error']['code']=='WEB_NOT_CONFIGURED'; print('web not-configured guard ok')"
 
+echo "## blender (no backend needed)"
+$H tool_list | j "names=[t['name'] for t in d['body']['tools']]; assert 'blender_render_preview' in names and 'retexture_model' in names; print('tool_list has blender tools:', len(names))"
+HI3D_DISABLE_BLENDER=1 $H tool_list | j "assert not any(t['name'].startswith('blender_') for t in d['body']['tools']); print('HI3D_DISABLE_BLENDER ok')"
+$H tool_list --no-scripts | j "assert not any(t['name']=='blender_run_script' for t in d['body']['tools']); print('--no-scripts ok')"
+$H blender status | j "assert d['ok'] and 'ready' in d['body']; print('blender status ok, ready =', d['body']['ready'])"
+{ HI3D_BASE_URL=http://127.0.0.1:8790 $H retexture_model "$TMP/out/cat.glb" || true; } | j "assert d['error']['code']=='BAD_ARGS'; print('retexture guard ok')"
+HI3D_BASE_URL=http://127.0.0.1:8790 $H retexture_model "$TMP/out/cat.glb" --image "$TMP/input.png" --poll 2>/dev/null | j "assert d['body']['state']=='success'; print('retexture (mock) ok')"
+node test/blender-protocol.mjs
+$H | head -1 | grep -q "Usage: hi3d-cli" && echo "no-arg help ok"
+
 echo "## MCP stdio"
 MCP_OUT="$(HI3D_BASE_URL=http://127.0.0.1:8790 IMG="$TMP/input.png" node test/mcp-stdio-smoke.mjs 2>"$TMP/mcp.err")"
 echo "$MCP_OUT" | grep -q "tools: who_am_i" && echo "$MCP_OUT" | grep -q "image_to_3d: success" && echo "$MCP_OUT" | grep -q "error path: true" && echo "mcp ok" || { echo "mcp FAILED"; echo "$MCP_OUT"; tail -20 "$TMP/mcp.err"; exit 1; }

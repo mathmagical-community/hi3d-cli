@@ -1,0 +1,11 @@
+{
+  "name": "@hi3d/blender",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": { ".": "./dist/index.js" },
+  "files": ["dist", "python"],
+  "dependencies": { "@hi3d/core": "2.0.0" }
+}

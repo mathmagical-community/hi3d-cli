@@ -15,9 +15,30 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { Credentials, loadCredentials } from '@hi3d/core';
 import { createServer } from './server.js';
 
-export async function runStdio(opts: { outDir?: string } = {}) {
-  const server = createServer({ mode: 'local', outDir: opts.outDir, log: (m) => process.stderr.write(m + '\n') });
-  await server.connect(new StdioServerTransport());
+export interface StdioOptions {
+  outDir?: string;
+  workspace?: string;
+  confinePaths?: boolean;
+  scripts?: boolean;
+}
+
+export async function runStdio(opts: StdioOptions = {}) {
+  const { server, ctx } = createServer({ mode: 'local', outDir: opts.outDir, workspace: opts.workspace, confinePaths: opts.confinePaths, scripts: opts.scripts, log: (m) => process.stderr.write(m + '\n') });
+  const transport = new StdioServerTransport();
+  const shutdown = () => {
+    ctx.dispose();
+  };
+  transport.onclose = shutdown;
+  process.on('SIGINT', () => {
+    shutdown();
+    process.exit(0);
+  });
+  process.on('SIGTERM', () => {
+    shutdown();
+    process.exit(0);
+  });
+  process.on('exit', shutdown);
+  await server.connect(transport);
 }
 
 function credsFromHeader(h: string | undefined): Credentials | undefined {
@@ -53,11 +74,12 @@ export async function runHttp(port: number, opts: { path?: string; requireAuth?:
       return;
     }
     // stateless: fresh server + transport per request
-    const server = createServer({ mode: 'remote', credentials: creds, log: (m) => process.stderr.write(m + '\n') });
+    const { server, ctx } = createServer({ mode: 'remote', credentials: creds, log: (m) => process.stderr.write(m + '\n') });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => {
       transport.close();
       server.close();
+      ctx.dispose();
     });
     try {
       await server.connect(transport);
@@ -79,8 +101,11 @@ export async function main(argv = process.argv.slice(2)) {
     await runHttp(port, { requireAuth: argv.includes('--require-auth') });
     return;
   }
-  const outIdx = argv.indexOf('--out');
-  await runStdio({ outDir: outIdx >= 0 ? argv[outIdx + 1] : undefined });
+  const val = (flag: string) => {
+    const i = argv.indexOf(flag);
+    return i >= 0 ? argv[i + 1] : undefined;
+  };
+  await runStdio({ outDir: val('--out'), workspace: val('--workspace'), confinePaths: !argv.includes('--allow-any-path'), scripts: !argv.includes('--no-scripts') });
 }
 
 const isDirect = process.argv[1] && /hi3d-mcp$|[\\/]mcp[\\/]dist[\\/]main\.js$/.test(process.argv[1]);

@@ -2,14 +2,16 @@
  * Builds the `hi3d-cli` commander program: login/configure, Hi3D commands, MCP server.
  * Pure JS; runs on macOS / Windows / Linux with Node >= 18.
  */
+import fs from 'node:fs';
 import { Command, Option } from 'commander';
 import { z } from 'zod';
 import { Hi3DError, configPath, describeProfile, loadProfile } from '@hi3d/core';
-import { TOOLS, listTools, makeContext, runStdio, runHttp } from '@hi3d/mcp';
+import { activeTools, listTools, makeContext, runStdio, runHttp, ToolResult, ToolDef } from '@hi3d/mcp';
+import { registerBlenderCommands } from './blender-cmds.js';
 import { registerAuthCommands } from './auth-cmds.js';
 import { checkForUpdate } from './update-check.js';
 
-export const VERSION = '1.0.1';
+export const VERSION = '2.0.0';
 /** npm package name used for the update hint; overridden at release build via NPM_PACKAGE_NAME */
 export const PACKAGE_NAME = process.env.HI3D_NPM_NAME ?? 'hi3d-cli';
 
@@ -44,6 +46,15 @@ const POSITIONAL: Record<string, string> = {
   image_to_relief: 'image',
   multicolor_model: 'mesh',
   download_asset: 'task_id',
+  retexture_model: 'mesh',
+  blender_load: 'path',
+  blender_export: 'path',
+  blender_run_script: 'code',
+  blender_session: 'action',
+  blender_scale_to_size: 'size_mm',
+  blender_decimate: 'target_faces',
+  blender_delete_objects: 'names',
+  blender_join: 'names',
 };
 
 type ZodAny = z.ZodTypeAny;
@@ -67,10 +78,11 @@ function enumValues(s: ZodAny): string[] | undefined {
   return undefined;
 }
 
-function addToolCommand(program: Command, t: (typeof TOOLS)[number]) {
+function addToolCommand(program: Command, t: ToolDef) {
   const cmd = program.command(t.name).description(t.description);
   const pos = POSITIONAL[t.name];
-  if (pos) cmd.argument(`[${pos}]`, `same as --${pos}`);
+  const posKind = pos ? kindOf(unwrap((t.schema as Record<string, ZodAny>)[pos]).inner) : '';
+  if (pos) cmd.argument(posKind === 'array' ? `[${pos}...]` : `[${pos}]`, `same as --${pos}`);
   const flagName = (k: string) => k.replace(/_/g, '-');
   const shape = t.schema as Record<string, ZodAny>;
   for (const [key, raw] of Object.entries(shape)) {
@@ -93,14 +105,22 @@ function addToolCommand(program: Command, t: (typeof TOOLS)[number]) {
       const camel = key.replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase());
       if (opts[camel] !== undefined) args[key] = opts[camel];
     }
-    if (pos && typeof cliArgs[0] === 'string' && args[pos] === undefined) args[pos] = cliArgs[0];
+    if (pos && args[pos] === undefined) {
+      const v = cliArgs[0];
+      if (typeof v === 'string') args[pos] = posKind === 'number' || posKind === 'int' ? Number(v) : v;
+      else if (Array.isArray(v) && v.length) args[pos] = v;
+    }
+    if (t.name === 'blender_run_script' && typeof args.code === 'string' && args.code.startsWith('@')) args.code = fs.readFileSync(args.code.slice(1), 'utf8');
     const parsed = z.object(t.schema).safeParse(args);
     if (!parsed.success) fail(new Hi3DError('Invalid arguments: ' + parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '), { code: 'BAD_ARGS', status: 400 }));
-    const ctx = makeContext({ mode: 'local', outDir: program.opts().out, log });
+    const ctx = makeContext({ mode: 'local', outDir: program.opts().out, workspace: program.opts().workspace, confinePaths: !program.opts().allowAnyPath, log });
     try {
-      emit(await t.handler(parsed.data, ctx));
+      const r = await t.handler(parsed.data, ctx);
+      emit(r instanceof ToolResult ? r.body : r);
     } catch (e) {
       fail(e);
+    } finally {
+      ctx.dispose();
     }
   });
 }
@@ -109,7 +129,9 @@ export function buildProgram(): Command {
   const program = new Command('hi3d-cli')
     .version(VERSION, '-V, --version', 'print version')
     .description(`hi3d-cli ${VERSION} — image to 3D for terminals and AI agents. All output is JSON: { ok, status, body }.`)
-    .option('--out <dir>', 'default download directory', process.env.HI3D_OUT_DIR ?? 'hi3d-out')
+    .option('--out <dir>', 'default download directory (default: <workspace>/hi3d-out)', process.env.HI3D_OUT_DIR)
+    .option('--workspace <dir>', 'directory Blender/file commands are confined to (default: cwd)', process.env.HI3D_WORKSPACE)
+    .option('--allow-any-path', 'let Blender commands read/write outside the workspace')
     .option('--no-update-check', 'skip the once-a-day new-version hint')
     .showHelpAfterError()
     .hook('preAction', async (thisCmd) => {
@@ -126,22 +148,25 @@ export function buildProgram(): Command {
       emit({ version: VERSION, profile: p ? { ...describeProfile(p), source: p.name === 'env' ? 'env' : configPath() } : null });
     });
 
-  for (const t of TOOLS) addToolCommand(program, t);
+  for (const t of activeTools({ local: true })) addToolCommand(program, t);
+  registerBlenderCommands(program, emit, fail, log);
 
   program
     .command('tool_list')
     .description('List MCP tools (name, description, inputSchema) exposed by this version')
     .option('--remote', 'only tools available in remote/HTTP mode')
-    .action((o) => emit({ version: VERSION, tools: listTools(!o.remote) }));
+    .option('--no-scripts', 'hide blender_run_script (as `mcp --no-scripts` does)')
+    .action((o) => emit({ version: VERSION, tools: listTools(!o.remote, o.scripts !== false) }));
 
   program
     .command('mcp')
     .description('Run the Hi3D MCP server (stdio by default; --http <port> for Streamable HTTP)')
     .option('--http [port]', 'serve Streamable HTTP on this port (remote mode)')
     .option('--require-auth', 'HTTP: reject requests without Authorization header')
+    .option('--no-scripts', 'do not expose blender_run_script (only fixed recipes)')
     .action(async (o) => {
       if (o.http !== undefined) await runHttp(Number(o.http) || 8787, { requireAuth: !!o.requireAuth });
-      else await runStdio({ outDir: program.opts().out });
+      else await runStdio({ outDir: program.opts().out, workspace: program.opts().workspace, confinePaths: !program.opts().allowAnyPath, scripts: o.scripts !== false });
     });
 
   program
@@ -152,5 +177,9 @@ export function buildProgram(): Command {
       process.stdout.write(AGENT_DOCS);
     });
 
+  // no sub-command → help (exit 0)
+  program.action(() => {
+    program.outputHelp();
+  });
   return program;
 }

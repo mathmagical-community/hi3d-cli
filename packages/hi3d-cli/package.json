@@ -1,7 +1,7 @@
 {
   "name": "@hi3d/hi3d-cli",
-  "version": "1.0.1",
-  "description": "Hi3D image-to-3D from the terminal and for AI agents (Claude Code, Codex, Cursor): login with Open Platform AK/SK or a hi3d.ai account, generate, poll, download, split, relief, multicolor; MCP server included.",
+  "version": "2.0.0",
+  "description": "Hi3D image-to-3D from the terminal and for AI agents (Claude Code, Codex, Cursor): login with Open Platform AK/SK or a hi3d.ai account, generate, poll, download, split, relief, multicolor; MCP server included; 2.0 edits models with headless Blender (inspect, repair, decimate, scale, render previews, export, re-texture).",
   "license": "MIT",
   "homepage": "https://github.com/mathmagical-community/hi3d-cli#readme",
   "repository": {
@@ -20,7 +20,9 @@
     "agent",
     "claude-code",
     "codex",
-    "3d-printing"
+    "3d-printing",
+    "blender",
+    "bpy"
   ],
   "private": true,
   "scripts": {

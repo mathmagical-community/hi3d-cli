@@ -1,11 +1,13 @@
 ---
 name: hi3d-cli
-version: 1.0.0
+version: 2.0.0
 description: >-
   Hi3D 官方 CLI（hi3d-cli）使用技能：图生 3D（image_to_3d）、任务查询（query_task）、结果下载（download_asset）、
-  打印拆件（split_model）、浮雕（image_to_relief）、多色（multicolor_model）、余额（balance）。
-  命令名与 MCP 工具名 1:1，输出统一 JSON。触发词：Hi3D、hi3d、hi3d-cli、图生3D、image to 3D、3D 打印、glb、
-  拆件、浮雕、多色打印、task_id、轮询、积分、登录、install。
+  打印拆件（split_model）、浮雕（image_to_relief）、多色（multicolor_model）、余额（balance），
+  以及 2.0 的无头 Blender 编辑（blender_load/inspect/repair/decimate/scale_to_size/render_preview/export/run_script）
+  和重贴图（retexture_model）。命令名与 MCP 工具名 1:1，输出统一 JSON。触发词：Hi3D、hi3d、hi3d-cli、图生3D、
+  image to 3D、3D 打印、glb、拆件、浮雕、多色打印、task_id、轮询、积分、登录、install、Blender、bpy、减面、修复、
+  缩放尺寸、渲染预览、重贴图、retexture。
 requires: node>=18
 homepage: https://hi3d.ai
 ---
@@ -60,6 +62,25 @@ hi3d-cli balance
 
 余额不足（code 30010000）：引导用户到 https://platform.hi3d.ai 或 https://hi3d.ai 充值，不要重试。
 生成失败（50010001）：自动退积分，可重试一次。生成扣费，先和用户确认模型与分辨率再提交。
+
+## Blender 编辑（2.0，无头，无需 GPU）
+
+```bash
+hi3d-cli blender status                    # ready:false 时：已装 Blender 4.2+ 会自动识别；否则征得同意后 hi3d-cli blender setup（下载约 300 MB）
+hi3d-cli blender_load gen/cat.glb          # 载入到 <workspace>/.hi3d/session.blend，返回 faces / dimensions_m / non_manifold_edges / textures
+hi3d-cli blender_inspect                   # 每次编辑后确认；可打印 = is_watertight 且 non_manifold_edges 0
+hi3d-cli blender_scale_to_size 80          # 最长边 80 mm；blender_center --floor 放到原点/地面
+hi3d-cli blender_repair                    # 合并重复点、补洞、法线；blender_decimate --target-faces 200000 减面
+hi3d-cli blender_split_loose | blender_join | blender_delete_objects | blender_hollow --wall-thickness-mm 2
+hi3d-cli blender_run_script @edit.py       # 其他任意编辑：bpy/bmesh/C/D/math/json 可用，赋值 result 返回 JSON
+hi3d-cli blender_render_preview --views iso front   # 渲染图在 .hi3d/renders/；MCP 中直接以图片返回，看图判断效果
+hi3d-cli blender_export out/cat_80mm.glb   # glb/obj/stl/fbx/usdz/ply
+hi3d-cli retexture_model out/cat_80mm.glb --image ./cat.png --poll --download   # 编辑后的网格回 Hi3D 重贴图（v3.0，扣 105/455 积分）
+```
+
+- 路径只能在 workspace 内（默认当前目录；`--workspace <dir>` 指定）。生成扣积分，Blender 编辑免费：只生成一次，然后反复编辑。
+- 顺序：load → inspect → 编辑 → inspect/render_preview 确认 → export；打印用途保持 watertight 与真实尺寸（单位米/毫米）。
+- `blender_run_script` 在用户机器上执行 Python，与执行 shell 同等信任级别，只写与任务相关的编辑代码。
 
 ## 结果展示
 

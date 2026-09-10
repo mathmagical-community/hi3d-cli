@@ -3,6 +3,7 @@
  * `local` tools need filesystem access and are only registered for stdio mode.
  */
 import { z } from 'zod';
+import type { BlenderOpContext } from '@hi3d/blender';
 import {
   OpContext,
   balance,
@@ -13,16 +14,41 @@ import {
   queryTask,
   splitModel,
   whoAmI,
+  retextureModel,
   CATALOG,
 } from '@hi3d/core';
+
+/** What tool handlers get: the Hi3D OpContext plus workspace and a lazy Blender session. */
+export interface ToolContext extends OpContext {
+  workspace: string;
+  blenderCtx: () => BlenderOpContext;
+}
+
+/** Return this from a handler to attach images (rendered previews) to the MCP result. */
+export class ToolResult {
+  constructor(
+    readonly body: unknown,
+    readonly images: { path: string; mimeType: string }[] = [],
+  ) {}
+}
+
+export interface ToolAnnotations {
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
+}
 
 export interface ToolDef {
   name: string;
   title: string;
   description: string;
   local?: boolean;
+  /** feature group; 'blender' tools can be hidden with HI3D_DISABLE_BLENDER=1 or --no-scripts (run_script only) */
+  feature?: 'blender';
+  annotations?: ToolAnnotations;
   schema: z.ZodRawShape;
-  handler: (args: Record<string, unknown>, ctx: OpContext) => Promise<unknown>;
+  handler: (args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>;
 }
 
 const pollShape = {
@@ -37,7 +63,7 @@ const downloadShape = {
 const fileDesc = (what: string) => `${what}: a public https URL, or (local mode only) a file path.`;
 const modelFormat = z.enum(['glb', 'obj', 'stl', 'fbx', 'usdz', '3mf']);
 
-export const TOOLS: ToolDef[] = [
+export const HI3D_TOOLS: ToolDef[] = [
   {
     name: 'who_am_i',
     title: 'Who am I / capabilities',
@@ -129,6 +155,24 @@ export const TOOLS: ToolDef[] = [
     handler: (a, ctx) => multicolorModel(a as never, ctx),
   },
   {
+    name: 'retexture_model',
+    title: 'Re-texture a mesh with Hi3D',
+    description:
+      'Generate textures for an existing/edited GLB mesh with Hi3D (request_type=texture, model hi3dv3.0; v2.x does not support it). Pass the GLB from blender_export plus the reference image(s). Same credits as image_to_3d (105 / 455). Async; returns task_id, or poll/download like image_to_3d.',
+    schema: {
+      mesh: z.string().describe(fileDesc('GLB mesh (e.g. from blender_export)')),
+      image: z.string().optional().describe(fileDesc('Reference image')),
+      multi_images: z.array(z.string()).max(4).optional().describe(fileDesc('2-4 multi-view images')),
+      resolution: z.string().optional().describe('2048quality (default) | 2048master'),
+      pbr: z.boolean().optional(),
+      shading: z.number().min(0).max(1).optional(),
+      format: modelFormat.optional().describe('Default glb.'),
+      ...pollShape,
+      ...downloadShape,
+    },
+    handler: (a, ctx) => retextureModel(a as never, ctx),
+  },
+  {
     name: 'balance',
     title: 'Credit balance',
     description: 'Return remaining credits (1 credit = $0.02).',
@@ -150,12 +194,26 @@ export const TOOLS: ToolDef[] = [
   },
 ];
 
-export function listTools(local: boolean) {
-  return TOOLS.filter((t) => local || !t.local).map((t) => ({
+import { BLENDER_TOOLS } from './blender-tools.js';
+
+export function blenderEnabled(): boolean {
+  return !process.env.HI3D_DISABLE_BLENDER;
+}
+
+export const TOOLS: ToolDef[] = [...HI3D_TOOLS, ...BLENDER_TOOLS];
+
+export function activeTools(opts: { local: boolean; scripts?: boolean } = { local: true }): ToolDef[] {
+  return TOOLS.filter((t) => (opts.local || !t.local) && (t.feature !== 'blender' || blenderEnabled()) && (opts.scripts !== false || t.name !== 'blender_run_script'));
+}
+
+export function listTools(local: boolean, scripts = true) {
+  return activeTools({ local, scripts }).map((t) => ({
     name: t.name,
     title: t.title,
     description: t.description,
     local: !!t.local,
+    feature: t.feature,
+    annotations: t.annotations,
     inputSchema: z.toJSONSchema(z.object(t.schema)),
   }));
 }

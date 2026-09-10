@@ -7,6 +7,7 @@ import { CATALOG, estimateCredits } from './catalog.js';
 import { CONSOLE_URL, describeProfile, loadProfile } from './config.js';
 import { FileRef, ImageTo3DOptions, PollOptions, TaskResult, inferTaskKind } from './client.js';
 import { Hi3DBackend } from './backend.js';
+import { Hi3DError } from './errors.js';
 
 export interface OpContext {
   client: () => Hi3DBackend;
@@ -14,6 +15,8 @@ export interface OpContext {
   outDir: string;
   /** whether local file paths are allowed (false for remote MCP) */
   allowLocalFiles: boolean;
+  /** base directory for relative local paths (the workspace; default cwd) */
+  baseDir?: string;
   log?: (msg: string) => void;
 }
 
@@ -22,7 +25,7 @@ export function toFileRef(v: string, ctx: OpContext): FileRef {
   if (!ctx.allowLocalFiles) {
     throw new Error(`Local paths are not allowed here (${v}); pass a public URL instead.`);
   }
-  return { path: path.resolve(v) };
+  return { path: path.resolve(ctx.baseDir ?? process.cwd(), v) };
 }
 
 export async function whoAmI(ctx: OpContext) {
@@ -84,6 +87,13 @@ export async function imageTo3D(input: ImageTo3DInput, ctx: OpContext) {
     mesh: input.mesh ? toFileRef(input.mesh, ctx) : undefined,
     callbackUrl: input.callback_url,
   };
+  if (o.requestType === 'texture') {
+    if (!o.mesh) throw new Hi3DError('request_type=texture needs a GLB mesh (mesh)', { code: 'BAD_ARGS', status: 400 });
+    const model = o.model ?? 'hi3dv3.0';
+    if (!/^hi3dv3|^hitem3dv1\.5/.test(model)) throw new Hi3DError(`texture-only generation is not supported by ${model}; use hi3dv3.0`, { code: 'BAD_ARGS', status: 400 });
+    o.model = model;
+    o.format = o.format ?? 'glb';
+  }
   const client = ctx.client();
   const { task_id } = await client.submitImageTo3D(o);
   const submitted = {
@@ -96,6 +106,12 @@ export async function imageTo3D(input: ImageTo3DInput, ctx: OpContext) {
   };
   if (!input.poll && !input.download) return submitted;
   return waitAndMaybeDownload(client, task_id, { ...input, task_id, poll: true }, ctx, submitted);
+}
+
+/** Texture an existing / edited GLB with Hi3D v3.0 (request_type=texture). */
+export async function retextureModel(input: { mesh: string; image?: string; multi_images?: string[]; resolution?: string; pbr?: boolean; shading?: number; format?: string } & Omit<QueryInput, 'task_id'>, ctx: OpContext) {
+  if (!input.image && !input.multi_images?.length) throw new Hi3DError('retexture needs a reference image (image or multi_images)', { code: 'BAD_ARGS', status: 400 });
+  return imageTo3D({ ...input, request_type: 'texture', model: 'hi3dv3.0', format: input.format ?? 'glb' }, ctx);
 }
 
 export interface QueryInput {
