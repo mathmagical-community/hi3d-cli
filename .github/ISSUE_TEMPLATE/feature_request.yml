@@ -1,0 +1,14 @@
+name: Feature request
+description: A new command / tool, or a change to an existing one
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: What are you trying to do? }
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes: { label: Proposed command / MCP tool and parameters }
+  - type: dropdown
+    id: area
+    attributes: { label: Area, options: [Hi3D API commands, Blender editing, Agent integration (MCP / skill), Login and config, Packaging / install, Docs] }

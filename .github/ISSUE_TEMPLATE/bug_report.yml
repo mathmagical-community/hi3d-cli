@@ -1,0 +1,22 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes: { label: hi3d-cli version, description: "`hi3d-cli --version`", placeholder: 2.0.0 }
+    validations: { required: true }
+  - type: dropdown
+    id: os
+    attributes: { label: OS, options: [macOS, Windows, Linux] }
+    validations: { required: true }
+  - type: dropdown
+    id: how
+    attributes: { label: How are you calling it?, options: [CLI in a terminal, MCP via Claude Code, MCP via Codex, MCP via Cursor, MCP via Trae / Doubao, OpenClaw, Other MCP client, Other] }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: Command or tool call, expected vs actual. Paste the JSON output (redact task ids / keys if you like). }
+    validations: { required: true }
+  - type: textarea
+    id: doctor
+    attributes: { label: "`hi3d-cli status` and, for Blender issues, `hi3d-cli blender doctor` output", render: json }

@@ -2,7 +2,7 @@
   "name": "hi3d-cli-monorepo",
   "private": true,
   "version": "2.0.0",
-  "description": "hi3d-cli \u2014 Hi3D image-to-3D CLI and MCP server for terminals and AI agents",
+  "description": "hi3d-cli — Hi3D image-to-3D CLI and MCP server for terminals and AI agents",
   "license": "MIT",
   "type": "module",
   "workspaces": [
@@ -17,7 +17,8 @@
     "test": "bash test/run-e2e.sh",
     "test:blender": "bash test/run-blender-e2e.sh",
     "release": "node scripts/build-release.mjs",
-    "release:pack": "npm run release && cd release && npm pack ./hi3d-cli"
+    "release:pack": "npm run release && cd release && npm pack ./hi3d-cli",
+    "docs:wiki": "node scripts/gen-wiki-tools.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

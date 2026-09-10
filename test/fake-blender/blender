@@ -1,18 +1,2 @@
 #!/usr/bin/env bash
-# Fake Blender app for tests: answers --version and runs `--python <script> -- <args>` with plain python3.
-if [[ " $* " == *" --version "* ]]; then
-  echo "Blender 5.2.1 LTS"
-  echo "	build date: 2026-07-01"
-  exit 0
-fi
-script=""; rest=(); seen_dd=0
-args=("$@")
-for ((i=0;i<${#args[@]};i++)); do
-  a="${args[$i]}"
-  if [[ $seen_dd == 1 ]]; then rest+=("$a"); continue; fi
-  if [[ "$a" == "--python" ]]; then script="${args[$((i+1))]}"; i=$((i+1)); continue; fi
-  if [[ "$a" == "--" ]]; then seen_dd=1; fi
-done
-[[ -z "$script" ]] && { echo "fake blender: no --python" >&2; exit 2; }
-echo "Blender 5.2.1 LTS (fake) $*"   # stdout noise, must not break the protocol
-exec "${FAKE_BLENDER_PYTHON:-python3}" -u "$script" -- "${rest[@]}"
+exec node "$(dirname "$0")/fake-blender.mjs" "$@"

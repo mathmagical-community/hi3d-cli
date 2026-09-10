@@ -38,6 +38,9 @@ jobs:
         env: { HI3D_NO_UPDATE_CHECK: '1' }
       - run: node release/hi3d-cli/bin/hi3d-cli.mjs status
         env: { HI3D_NO_UPDATE_CHECK: '1' }
+      - run: node release/hi3d-cli/bin/hi3d-cli.mjs blender status
+        env: { HI3D_NO_UPDATE_CHECK: '1' }
+      - run: node test/blender-protocol.mjs
 
   blender-linux:
     needs: test

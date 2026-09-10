@@ -61,8 +61,8 @@ const ok = (m) => console.log(`  ok ${++n} ${m}`);
   process.env.PATH = savedPath;
 }
 
-// 4. fake blender app on PATH (POSIX only: the fake is a bash script)
-if (process.platform !== 'win32') {
+// 4. fake blender app on PATH (bash shim on POSIX, .cmd shim on Windows, both run fake-blender.mjs)
+{
   const fakeDir = path.resolve('test/fake-blender');
   const savedPath = process.env.PATH;
   process.env.PATH = fakeDir + path.delimiter + savedPath;

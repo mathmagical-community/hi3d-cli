@@ -26,5 +26,5 @@ jobs:
         env: { HI3D_NO_UPDATE_CHECK: '1' }
       - run: node packages/cli/dist/main.js blender doctor
         env: { HI3D_NO_UPDATE_CHECK: '1' }
-      - if: runner.os != 'Windows'
-        run: REQUIRE_BLENDER=1 npm run test:blender
+      - run: REQUIRE_BLENDER=1 npm run test:blender
+        shell: bash

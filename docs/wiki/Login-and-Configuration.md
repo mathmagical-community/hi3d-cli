@@ -1,0 +1,113 @@
+# Login and configuration
+
+## Two ways to log in
+
+| Mode | Command | Notes |
+|---|---|---|
+| Open Platform **AK/SK** | `hi3d-cli login --mode ak --ak <AK> --sk <SK>` | Keys from https://platform.hi3d.ai/console/apiKey (the secret is shown once). Pay-as-you-go. Every command available: generate, split, relief, multicolor, retexture. |
+| **hi3d.ai account** | `hi3d-cli login --mode web --account you@example.com` | Same credits as the website. The password is prompted and not echoed; `--password` for scripts; `--cookie "<cookie header>"` to reuse a browser session instead. Supports generate / query / download / balance only. |
+
+`hi3d-cli login` with no flags asks which mode you want. Add `--no-verify` to skip the balance check (offline / CI).
+
+Check the result:
+
+```bash
+hi3d-cli who_am_i
+# body.authMode: ak_sk | web_session   body.balance   body.unsupported: [commands not available in this mode]
+```
+
+## Profiles
+
+Several accounts can coexist, like `aws configure` profiles:
+
+```bash
+hi3d-cli configure list                                  # all profiles and the current one
+hi3d-cli configure get [name]
+hi3d-cli configure set -p work --mode ak --ak … --sk …   # create / overwrite without verifying
+hi3d-cli configure profile work                          # make it current
+hi3d-cli configure delete old
+hi3d-cli logout [--profile name]                         # web mode also ends the server-side session
+HI3D_PROFILE=work hi3d-cli balance                       # one-off switch
+```
+
+## Environment variables instead of a config file
+
+Useful for CI and agents; nothing is written to disk:
+
+| Variable | Meaning |
+|---|---|
+| `HI3D_CLIENT_ID`, `HI3D_CLIENT_SECRET` | AK/SK |
+| `HI3D_WEB_COOKIE` | web session cookie |
+| `HI3D_PROFILE` | which stored profile to use |
+| `HI3D_CONFIG_DIR` | config directory (default `~/.hi3d`) |
+| `HI3D_BASE_URL` | Open API base (tests / private deployments) |
+
+Precedence: explicit env credentials → `HI3D_PROFILE` → the current profile in the config file.
+
+## The config file
+
+`~/.hi3d/config.json`, mode `0600`:
+
+```json
+{
+  "current": "default",
+  "profiles": {
+    "default": { "mode": "ak", "clientId": "…", "clientSecret": "…" },
+    "me":      { "mode": "web", "account": "you@example.com", "cookie": "…", "userId": "…" }
+  },
+  "blender": "app:/Applications/Blender.app/Contents/MacOS/Blender"
+}
+```
+
+`blender` is written by `hi3d-cli blender use …` (see [Blender Editing](Blender-Editing)). Never commit this file.
+
+## Web mode constants
+
+Web mode talks to the hi3d.ai website's own endpoints. Their identifiers are not in the public repository; official npm releases have them built in. Building from source without them gives `WEB_NOT_CONFIGURED` for `--mode web` while AK/SK mode keeps working — see [Development](Development#web-mode-constants).
+
+---
+
+# 登录与配置
+
+## 两种登录方式
+
+| 方式 | 命令 | 说明 |
+|---|---|---|
+| 开放平台 **AK/SK** | `hi3d-cli login --mode ak --ak <AK> --sk <SK>` | 密钥在 https://platform.hi3d.ai/console/apiKey 创建（secret 只显示一次）。按量计费。所有命令可用：生成、拆件、浮雕、多色、重贴图。 |
+| **hi3d.ai 账号** | `hi3d-cli login --mode web --account you@example.com` | 与网站共用积分。密码提示输入不回显；脚本可用 `--password`；也可 `--cookie "<cookie 头>"` 复用浏览器会话。只支持生成 / 查询 / 下载 / 余额。 |
+
+不带参数的 `hi3d-cli login` 会问你选哪种。`--no-verify` 跳过余额校验（离线 / CI）。
+
+检查：
+
+```bash
+hi3d-cli who_am_i
+# body.authMode: ak_sk | web_session   body.balance   body.unsupported: [当前模式不可用的命令]
+```
+
+## 多 profile
+
+多个账号可以共存，用法同 `aws configure`：
+
+```bash
+hi3d-cli configure list                                  # 所有 profile 与当前项
+hi3d-cli configure get [name]
+hi3d-cli configure set -p work --mode ak --ak … --sk …   # 新建 / 覆盖，不校验
+hi3d-cli configure profile work                          # 设为当前
+hi3d-cli configure delete old
+hi3d-cli logout [--profile name]                         # web 模式同时注销服务端会话
+HI3D_PROFILE=work hi3d-cli balance                       # 单次切换
+```
+
+## 用环境变量代替配置文件
+
+适合 CI 和 agent，不落盘：`HI3D_CLIENT_ID` / `HI3D_CLIENT_SECRET`（AK/SK）、`HI3D_WEB_COOKIE`（网站会话）、`HI3D_PROFILE`（用哪个已保存的 profile）、`HI3D_CONFIG_DIR`（配置目录，默认 `~/.hi3d`）、`HI3D_BASE_URL`（开放 API 地址，测试 / 私有部署用）。
+优先级：环境变量里的凭据 → `HI3D_PROFILE` → 配置文件里的当前 profile。
+
+## 配置文件
+
+`~/.hi3d/config.json`，权限 `0600`，结构见上面英文部分。`blender` 字段由 `hi3d-cli blender use …` 写入。不要把这个文件提交到仓库。
+
+## web 模式常量
+
+web 模式调用的是 hi3d.ai 网站自己的接口，相关标识不在公开仓库里；npm 正式包已内置。从源码构建且没有这些常量时，`--mode web` 会报 `WEB_NOT_CONFIGURED`，AK/SK 模式不受影响，见 [Development](Development#web-mode-constants)。
