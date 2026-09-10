@@ -3,7 +3,7 @@
  * Python is obtained from (in order): --python, `uv` (downloads CPython if needed), a system interpreter of the
  * exact required minor version. bpy is installed from PyPI only, pinned, wheels only.
  */
-import { spawnSync } from 'node:child_process';
+import { spawnSyncX as spawnSync } from './spawn.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { BlenderError } from './errors.js';

@@ -5,7 +5,7 @@
  *   3. managed env ~/.hi3d/blender/envs/bpy-X.Y (created by `hi3d-cli blender setup`)
  *   4. (doctor / --refresh only) any python on PATH that can `import bpy`
  */
-import { spawnSync } from 'node:child_process';
+import { spawnSyncX as spawnSync } from './spawn.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

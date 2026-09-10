@@ -1,5 +1,6 @@
 /** Node driver for python/executor.py: spawn (app or python), handshake, JSON-lines calls, timeouts. */
-import { spawn, ChildProcess } from 'node:child_process';
+import { ChildProcess } from 'node:child_process';
+import { spawnX as spawn } from './spawn.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';

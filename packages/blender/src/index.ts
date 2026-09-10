@@ -6,3 +6,4 @@ export * from './managed-env.js';
 export * from './executor.js';
 export * from './session.js';
 export * from './ops.js';
+export * from './spawn.js';
