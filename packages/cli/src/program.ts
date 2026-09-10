@@ -11,7 +11,7 @@ import { registerBlenderCommands } from './blender-cmds.js';
 import { registerAuthCommands } from './auth-cmds.js';
 import { checkForUpdate } from './update-check.js';
 
-export const VERSION = '2.0.0-rc.1';
+export const VERSION = '2.0.0';
 /** npm package name used for the update hint; overridden at release build via NPM_PACKAGE_NAME */
 export const PACKAGE_NAME = process.env.HI3D_NPM_NAME ?? 'hi3d-cli';
 
