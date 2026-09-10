@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0
+## 2.0.0-rc.1 (pre-release, npm tag `next`)
 
 - Headless Blender integration: new `blender_*` tools / commands (load, inspect, run_script, render_preview, export, session, scale_to_size, center, transform, decimate, repair, split_loose, join, delete_objects, apply_modifiers, hollow) and `retexture_model` (Hi3D `request_type=texture` for an edited GLB).
 - Two backends, auto-detected: an installed Blender 4.2+ app (`blender -b --python`) or a managed `bpy` Python environment created by `hi3d-cli blender setup` (5.2 LTS / py3.13 by default; 5.0 / 4.5 / 4.2 on py3.11). `hi3d-cli blender status|doctor|use|uninstall|list`.

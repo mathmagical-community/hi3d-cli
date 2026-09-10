@@ -1,4 +1,7 @@
 name: release
+# Stable tags (vX.Y.Z) must point at a commit on `main` and publish as npm `latest`.
+# Pre-release tags (vX.Y.Z-rc.N / -beta.N / -alpha.N) may point at `develop` (or main), are marked
+# "pre-release" on GitHub and publish under the npm dist-tag `next` so `npm i @hi3d/hi3d-cli` is unaffected.
 on:
   push:
     tags: ['v*']
@@ -10,10 +13,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - name: release tags must point at a commit on main
+      - name: classify the tag and check the branch it points at
+        id: tag
         run: |
-          git fetch origin main
-          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::$GITHUB_REF_NAME is not on main; release from main only"; exit 1; }
+          TAG="${GITHUB_REF_NAME#v}"
+          VER=$(node -p "require('./packages/hi3d-cli/package.json').version")
+          [ "$TAG" = "$VER" ] || { echo "::error::tag v$TAG does not match packages/hi3d-cli/package.json version $VER"; exit 1; }
+          git fetch origin main develop
+          if [[ "$TAG" == *-* ]]; then
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/develop || git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+              || { echo "::error::pre-release tag must point at develop or main"; exit 1; }
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"; echo "npm_tag=next" >> "$GITHUB_OUTPUT"
+          else
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::stable tag $GITHUB_REF_NAME is not on main; release stable versions from main only"; exit 1; }
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"; echo "npm_tag=latest" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
         with: { node-version: 22, registry-url: 'https://registry.npmjs.org' }
       - run: npm ci
@@ -27,7 +41,10 @@ jobs:
       - run: cd release && npm pack ./hi3d-cli
       - name: GitHub Release with the packed tarball
         uses: softprops/action-gh-release@v2
-        with: { files: 'release/*.tgz', generate_release_notes: true }
+        with:
+          files: 'release/*.tgz'
+          generate_release_notes: true
+          prerelease: ${{ steps.tag.outputs.prerelease == 'true' }}
       - name: skip npm publish if this version already exists
         id: exists
         run: |
@@ -39,4 +56,4 @@ jobs:
       - if: steps.exists.outputs.published == 'false'
         run: npm install -g npm@latest
       - if: steps.exists.outputs.published == 'false'
-        run: cd release/hi3d-cli && npm publish --access public --provenance
+        run: cd release/hi3d-cli && npm publish --access public --provenance --tag ${{ steps.tag.outputs.npm_tag }}

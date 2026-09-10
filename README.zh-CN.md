@@ -230,8 +230,9 @@ npm run release:pack     # esbuild 单文件打包 → release/hi3d-cli-<version
 `packages/mcp`（工具表 + MCP server）、`packages/cli`（commander 程序）、`packages/hi3d-cli`（npm 包元数据）、
 `skill/`（agent skill）、`test/`、`docs/wiki/`（wiki 源文件）。
 
-分支：日常提交到 `develop`，`main` 只放已发布代码。发布：在 `main` 的提交上打 `v*` tag——工作流会拒绝不在 `main` 上的
-tag，然后跑三系统 × Node 18 / 20 / 22 冒烟并带 provenance 发布到 npm。参与贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+分支：日常提交到 `develop`，`main` 只放正式发布的代码。发布：先在 `develop` 上打 `vX.Y.Z-rc.N` 出预发布版，npm 上以
+`next` 标签发布（`npm i @hi3d/hi3d-cli@next` 试用）；测试没问题再合入 `main`，在 `main` 上打 `vX.Y.Z` 发正式版（`latest`）。
+工作流会校验分支，跑三系统 × Node 18 / 20 / 22 冒烟，带 provenance 发布到 npm。参与贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 社区
 
