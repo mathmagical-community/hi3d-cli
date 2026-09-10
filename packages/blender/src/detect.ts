@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadConfig } from '@hi3d/core';
-import { MIN_BLENDER, parseVersion, versionAtLeast, appInstallHint } from './matrix.js';
+import { MIN_BLENDER, parseVersion, versionAtLeast, appInstallHint, installableReleases } from './matrix.js';
 import { blenderHome, envPython, executorScriptPath } from './paths.js';
 
 export type BackendKind = 'app' | 'managed' | 'python';
@@ -214,6 +214,6 @@ export function resolveBackend(o: DetectOptions = {}): { backend: BackendInfo | 
   const backend = candidates.find((c) => c.ok) ?? null;
   const hint = backend
     ? undefined
-    : `No usable Blender found. Either install Blender 4.2+ (${appInstallHint()}) or run \`hi3d-cli blender setup\` to create a managed Python environment with the bpy module.`;
+    : `No usable Blender found. Either (A) install Blender 4.2+ (${appInstallHint()}) — detected automatically — or (B) run \`hi3d-cli blender setup\` to create a managed Python env with the bpy module (needs Python ${installableReleases()[0]?.python ?? '3.13'}: install uv (https://docs.astral.sh/uv/) and it is downloaded for you, or pass --python /path/to/python${installableReleases()[0]?.python ?? '3.13'}).`;
   return { backend, candidates, hint };
 }

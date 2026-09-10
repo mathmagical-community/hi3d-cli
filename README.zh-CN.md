@@ -111,6 +111,16 @@ hi3d-cli blender use /path/to/blender   # 固定后端；`auto` 取消。也可 
 Intel Mac 和 Linux aarch64 没有 `bpy` wheel，请安装 Blender 应用（`brew install --cask blender`、
 `winget install BlenderFoundation.Blender`、`snap install blender --classic`）。
 
+**`blender status` 显示 `ready: false` 时，三选一：**
+
+| 方式 | 适用 | 命令 |
+|---|---|---|
+| A. 安装 Blender 应用 | 最省事；Intel Mac / Linux aarch64 的唯一选择 | macOS `brew install --cask blender`，Windows `winget install BlenderFoundation.Blender`，Linux `snap install blender --classic` 或发行版包（≥ 4.2）。装完 `hi3d-cli blender status` 即可识别，不需要其他设置。 |
+| B. 用 uv 建受管 `bpy` 环境 | 不想装 Blender；uv 会自动下载所需 Python | `brew install uv`（或 `curl -LsSf https://astral.sh/uv/install.sh \| sh`，Windows `winget install astral-sh.uv`），然后 `hi3d-cli blender setup` |
+| C. 用自己的 Python 3.13 建受管环境 | 已有 Python 3.13（python.org、pyenv、conda） | `hi3d-cli blender setup --python /path/to/python3.13`；conda 示例：`conda create -n bpy python=3.13 -y && hi3d-cli blender setup --python "$(conda run -n bpy python -c 'import sys;print(sys.executable)')"` |
+
+`blender setup` 需要 Python 3.13（bpy 5.2）或 3.11（`--bpy 5.0/4.5/4.2`）；PATH 上的 conda `(base)` 若是 3.11/3.12 不会被自动采用，请用 B 或 C。最后用 `hi3d-cli blender doctor` 验证。
+
 典型流程（agent 调用的就是这些工具）：
 
 ```bash

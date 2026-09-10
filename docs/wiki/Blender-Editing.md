@@ -33,6 +33,14 @@ hi3d-cli blender uninstall [--bpy 5.2]
 
 `blender setup` obtains Python in this order: `--python` → [uv](https://docs.astral.sh/uv/) (downloads the exact version) → a system interpreter of that exact minor version. It then installs the pinned `bpy` wheel from PyPI (~250–350 MB), runs a self-check and writes `env.json`.
 
+### Nothing installed yet? (`blender status` → `ready: false`)
+
+- **A. Install the Blender app** — macOS `brew install --cask blender`, Windows `winget install BlenderFoundation.Blender`, Linux `snap install blender --classic` / distro package ≥ 4.2. Detected automatically; the only option on Intel Mac and Linux aarch64.
+- **B. uv + managed env** — `brew install uv` / `curl -LsSf https://astral.sh/uv/install.sh | sh` / `winget install astral-sh.uv`, then `hi3d-cli blender setup` (uv fetches Python 3.13, ~300 MB bpy download).
+- **C. Your own Python 3.13** — `hi3d-cli blender setup --python /path/to/python3.13`. conda: `conda create -n bpy python=3.13 -y && hi3d-cli blender setup --python "$(conda run -n bpy python -c 'import sys;print(sys.executable)')"`.
+
+A conda `(base)` or system Python of another minor version is not used automatically. Finish with `hi3d-cli blender doctor`.
+
 ## The edit loop
 
 ```bash
@@ -102,6 +110,14 @@ hi3d-cli 以**无头方式**运行 Blender：没有窗口、不需要 GPU，服�
 ### bpy 版本
 
 5.2（默认，LTS）需 Python 3.13；5.0 / 4.5 / 4.2 需 Python 3.11。`blender setup` 依次尝试 `--python` → [uv](https://docs.astral.sh/uv/)（自动下载对应版本）→ 系统里同小版本的解释器，然后从 PyPI 装固定版本的 `bpy` wheel（约 250–350 MB），做自检并写 `env.json`。
+
+### 什么都没装时（`blender status` → `ready: false`）
+
+- **A. 安装 Blender 应用**——macOS `brew install --cask blender`，Windows `winget install BlenderFoundation.Blender`，Linux `snap install blender --classic` 或发行版包 ≥ 4.2。自动识别；Intel Mac 与 Linux aarch64 只有这一种方式。
+- **B. uv + 受管环境**——`brew install uv` / `curl -LsSf https://astral.sh/uv/install.sh | sh` / `winget install astral-sh.uv`，然后 `hi3d-cli blender setup`（uv 自动下载 Python 3.13，bpy 约 300 MB）。
+- **C. 自己的 Python 3.13**——`hi3d-cli blender setup --python /path/to/python3.13`。conda：`conda create -n bpy python=3.13 -y && hi3d-cli blender setup --python "$(conda run -n bpy python -c 'import sys;print(sys.executable)')"`。
+
+其他小版本的 conda `(base)` 或系统 Python 不会被自动采用。最后 `hi3d-cli blender doctor` 验证。
 
 ## 编辑流程
 

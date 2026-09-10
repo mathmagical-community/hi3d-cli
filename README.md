@@ -112,6 +112,17 @@ hi3d-cli blender use /path/to/blender   # pin a backend; `auto` to unpin. Or HI3
 Intel Macs and Linux aarch64 have no `bpy` wheel: install the Blender app instead (`brew install --cask blender`,
 `winget install BlenderFoundation.Blender`, `snap install blender --classic`).
 
+**`blender status` says `ready: false` — pick one:**
+
+| Option | When | Commands |
+|---|---|---|
+| A. Install the Blender app | simplest; the only option on Intel Mac / Linux aarch64 | macOS `brew install --cask blender` · Windows `winget install BlenderFoundation.Blender` · Linux `snap install blender --classic` or your distro package (≥ 4.2). Then `hi3d-cli blender status` — no further setup. |
+| B. Managed `bpy` env via uv | no Blender wanted; uv downloads the right Python | `brew install uv` (or `curl -LsSf https://astral.sh/uv/install.sh \| sh`, Windows `winget install astral-sh.uv`), then `hi3d-cli blender setup` |
+| C. Managed `bpy` env with your own Python 3.13 | you already have Python 3.13 (python.org, pyenv, conda) | `hi3d-cli blender setup --python /path/to/python3.13` — e.g. conda: `conda create -n bpy python=3.13 -y && hi3d-cli blender setup --python "$(conda run -n bpy python -c 'import sys;print(sys.executable)')"` |
+
+`blender setup` needs Python 3.13 for bpy 5.2 (3.11 for `--bpy 5.0/4.5/4.2`); a `(base)` conda Python 3.11/3.12 on PATH is not picked up
+automatically — use option B or C. Verify with `hi3d-cli blender doctor`.
+
 Typical loop (the same tools an agent calls):
 
 ```bash
