@@ -33,6 +33,11 @@ $H --workspace "$WS" blender_export out/cube_100mm.glb 2>/dev/null | j "assert d
 { $H --workspace "$WS" blender_export /tmp/escape.glb 2>/dev/null || true; } | j "assert d['error']['code']=='PATH_OUTSIDE_WORKSPACE'; print('confinement ok')"
 $H --workspace "$WS" --allow-any-path blender_export "$TMP/anywhere.glb" 2>/dev/null | j "assert d['ok']; print('allow-any-path ok')"
 test -f "$WS/.hi3d/session.blend" && echo "session.blend ok"
+$H --workspace "$WS" blender_session save --path backup/a.blend 2>/dev/null | j "assert d['body']['saved'].endswith('backup/a.blend') and d['body']['session'].endswith('.hi3d/session.blend'); print('session save copy ok')"
+$H --workspace "$WS" blender_run_script 'bpy.ops.mesh.primitive_cube_add(size=0.01)' >/dev/null 2>&1
+$H --workspace "$WS" blender_session open --path backup/a.blend 2>/dev/null | j "assert d['body']['totals']['objects']==1 and d['body']['session'].endswith('.hi3d/session.blend'), d; print('session open copy keeps autosave target ok')"
+$H --workspace "$WS" blender_run_script 'bpy.ops.mesh.primitive_cube_add(size=0.01)' >/dev/null 2>&1
+$H --workspace "$WS" blender_session open --path backup/a.blend 2>/dev/null | j "assert d['body']['totals']['objects']==1, 'backup was overwritten by autosave: %s' % d['body']['totals']; print('backup untouched by later edits ok')"
 
 echo "## MCP stdio with image content + retexture (mock Hi3D)"
 PORT=8791 node test/mock-hi3d-server.mjs >"$TMP/ak.log" 2>&1 &

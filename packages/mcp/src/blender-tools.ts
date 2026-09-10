@@ -110,7 +110,7 @@ export const BLENDER_TOOLS: ToolDef[] = [
     local: true,
     feature: 'blender',
     annotations: { openWorldHint: false },
-    description: 'Inspect, save, reset or open the persistent scene (.hi3d/session.blend in the workspace). reset clears the scene.',
+    description: 'Inspect, save, reset or open the persistent scene (.hi3d/session.blend in the workspace). save --path / open --path write or read a separate .blend copy (autosave keeps targeting the session file); reset clears the scene.',
     schema: { action: z.enum(['info', 'save', 'reset', 'open']), path: obj('For save/open: a .blend path.') },
     handler: async (a, ctx) => blenderSession(a as never, ctx.blenderCtx()),
   },

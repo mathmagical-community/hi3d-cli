@@ -477,22 +477,31 @@ def op_export(path, format=None, apply_modifiers=True, objects=None, draco=False
 
 
 def op_session(action="info", path=None, **_):
+    """open/save with an explicit path never move the autosave target: the session file stays the one the driver
+    opened (<workspace>/.hi3d/session.blend). `open` without a path re-reads the session file."""
     global _session_path
     bpy = bpy_mod()
     if action == "open":
-        _session_path = os.path.abspath(path)
-        os.makedirs(os.path.dirname(_session_path), exist_ok=True)
-        if os.path.exists(_session_path):
-            bpy.ops.wm.open_mainfile(filepath=_session_path, load_ui=False)
-        return {"session": _session_path, "exists": os.path.exists(_session_path), "totals": totals()}
-    if action == "save":
-        if path:
-            _session_path = os.path.abspath(path)
-        if not _session_path:
+        target = os.path.abspath(path) if path else _session_path
+        if not target:
             raise ValueError("no session path")
-        os.makedirs(os.path.dirname(_session_path), exist_ok=True)
-        bpy.ops.wm.save_as_mainfile(filepath=_session_path, copy=True, compress=True)
-        return {"session": _session_path, "bytes": os.path.getsize(_session_path)}
+        if _session_path is None:
+            _session_path = target  # first open by the driver defines the autosave target
+            os.makedirs(os.path.dirname(_session_path), exist_ok=True)
+        if os.path.exists(target):
+            _no_backups()
+            bpy.ops.wm.open_mainfile(filepath=target, load_ui=False)
+            if target != _session_path:
+                _autosave()
+        return {"session": _session_path, "opened": target, "exists": os.path.exists(target), "totals": totals()}
+    if action == "save":
+        target = os.path.abspath(path) if path else _session_path
+        if not target:
+            raise ValueError("no session path")
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        _no_backups()
+        bpy.ops.wm.save_as_mainfile(filepath=target, copy=True, compress=True)
+        return {"session": _session_path, "saved": target, "bytes": os.path.getsize(target)}
     if action == "reset":
         bpy.ops.wm.read_factory_settings(use_empty=True)
         _autosave()
