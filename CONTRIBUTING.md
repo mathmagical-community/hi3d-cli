@@ -30,7 +30,9 @@ To try against the real API, log in with your own keys (`hi3d-cli login`) and ne
 
 ## Releasing
 
-Bump `version` in `packages/hi3d-cli/package.json` and `VERSION` in `packages/cli/src/program.ts`, update `CHANGELOG.md`,
-then cut a pre-release from `develop` first: tag `vX.Y.Z-rc.N` on `develop` (published to npm under the dist-tag `next`, marked pre-release on GitHub; `npm i @hi3d/hi3d-cli@next` to test). When it checks out, merge `develop` into `main`, set the plain version and push `vX.Y.Z` **on `main`** (the workflow refuses stable tags elsewhere). GitHub Actions publishes to npm via Trusted Publishing (OIDC): register this repository
-and `release.yml` as a trusted publisher in the npm package settings once; no token secret is needed. Set the repository variable
-`NPM_PACKAGE_NAME` (e.g. `@hi3d/hi3d-cli`) to publish under a scoped name; leave it unset to publish `hi3d-cli`.
+Nobody pushes tags by hand — the release workflow derives the tag from `packages/hi3d-cli/package.json` and refuses inconsistent states.
+
+1. **Pre-release from `develop`**: set the version to `X.Y.Z-rc.N` in `packages/hi3d-cli/package.json` and `VERSION` in `packages/cli/src/program.ts`, add a `## X.Y.Z-rc.N` entry at the top of `CHANGELOG.md` (`npm run check-version` verifies all three agree), push. The workflow tags `vX.Y.Z-rc.N`, creates a GitHub pre-release and publishes to npm under the dist-tag `next` (`npm i @hi3d/hi3d-cli@next`).
+2. **Stable from `main`**: merge `develop` into `main`, set the plain `X.Y.Z` in the same three places, push `main`. The workflow tags `vX.Y.Z`, creates the GitHub Release and publishes as `latest`.
+
+A push whose version already has a tag does nothing. npm publishing uses Trusted Publishing (OIDC) — register this repository and `release.yml` once in the npm package settings — or an `NPM_TOKEN` secret; with neither the run stays green, the GitHub Release is still created, and the job summary shows the manual `npm publish` command. Set the repository variable `NPM_PACKAGE_NAME` (e.g. `@hi3d/hi3d-cli`) to publish under a scoped name.

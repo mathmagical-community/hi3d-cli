@@ -18,7 +18,8 @@
     "test:blender": "bash test/run-blender-e2e.sh",
     "release": "node scripts/build-release.mjs",
     "release:pack": "npm run release && cd release && npm pack ./hi3d-cli",
-    "docs:wiki": "node scripts/gen-wiki-tools.mjs"
+    "docs:wiki": "node scripts/gen-wiki-tools.mjs",
+    "check-version": "node scripts/check-version.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

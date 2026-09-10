@@ -39,11 +39,13 @@ Tests without Blender: `test/blender-protocol.mjs` runs the executor with a bpy-
 
 ## Branches and releases
 
-- Work on **`develop`**; open pull requests against it.
-- **Pre-release** (test first): on `develop` set `version` in `packages/hi3d-cli/package.json` and `VERSION` in `packages/cli/src/program.ts` to `X.Y.Z-rc.N`, tag `vX.Y.Z-rc.N`. The workflow publishes it to npm under the dist-tag `next` (`npm i @hi3d/hi3d-cli@next`) and marks the GitHub Release as pre-release.
-- **Stable**: merge `develop` → `main`, set the plain version `X.Y.Z`, update `CHANGELOG.md`, tag `vX.Y.Z` on `main` → npm `latest`.
-- `release.yml` checks that the tag matches the package version, that stable tags are on `main` (pre-release tags on `develop` or `main`), runs tests, creates the GitHub Release with the packed tarball and publishes to npm with provenance (npm Trusted Publishing; the package name comes from the repository variable `NPM_PACKAGE_NAME`, default `@hi3d/hi3d-cli`).
-- CI on every push / PR: build + tests on Linux, smoke on macOS / Windows / Linux × Node 18 / 20 / 22 (including the Blender protocol test), and `blender-linux` which installs bpy 5.2 and runs the real Blender e2e. `blender-app.yml` (manual) installs the Blender app on all three OSes.
+- Work on **`develop`**; open pull requests against it. `main` holds released code.
+- **Nobody pushes tags.** The release workflow runs on pushes to `develop` / `main` that change `packages/hi3d-cli/package.json`, derives the tag from its `version`, checks the branch, creates the tag, the GitHub Release (tarball attached) and publishes to npm.
+- **Pre-release** (test first): on `develop` set `X.Y.Z-rc.N` in `packages/hi3d-cli/package.json`, `VERSION` in `packages/cli/src/program.ts` and a `## X.Y.Z-rc.N` heading at the top of `CHANGELOG.md`; run `npm run check-version`; push. → tag `vX.Y.Z-rc.N`, GitHub pre-release, npm dist-tag `next` (`npm i @hi3d/hi3d-cli@next`).
+- **Stable**: merge `develop` → `main`, set the plain `X.Y.Z` in the same three places, push `main`. → tag `vX.Y.Z`, GitHub Release, npm `latest`.
+- A version that already has a tag is ignored (pushing docs to `main` never re-releases). A stable version on `develop`, or a pre-release version elsewhere, fails the run before anything is created.
+- npm publishing: Trusted Publishing (register `mathmagical-community/hi3d-cli` + `release.yml` in the npm package settings) or an `NPM_TOKEN` secret. With neither, the run stays **green**, the GitHub Release still exists and the job summary prints the manual `npm publish` command.
+- CI on every push / PR: `check-version`, build + tests on Linux, smoke on macOS / Windows / Linux × Node 18 / 20 / 22 (incl. the Blender protocol test), and `blender-linux` with a real bpy 5.2. `blender-app.yml` (manual) installs the Blender app on all three OSes.
 
 ## Updating the wiki
 
@@ -78,11 +80,13 @@ cp docs/wiki/*.md /tmp/wiki/ && cd /tmp/wiki && git add -A && git commit -m "syn
 
 ## 分支与发布
 
-- 在 **`develop`** 上开发，PR 也提到 develop。
-- **预发布**（先测）：在 `develop` 上把 `packages/hi3d-cli/package.json` 的 `version` 和 `packages/cli/src/program.ts` 的 `VERSION` 改成 `X.Y.Z-rc.N`，打 `vX.Y.Z-rc.N` tag。工作流以 npm `next` 标签发布（`npm i @hi3d/hi3d-cli@next`），GitHub Release 标为 pre-release。
-- **正式版**：`develop` 合入 `main`，改成 `X.Y.Z`，更新 `CHANGELOG.md`，在 `main` 上打 `vX.Y.Z` → npm `latest`。
-- `release.yml` 校验 tag 与包版本一致、正式 tag 必须在 `main`（预发布 tag 在 `develop` 或 `main`），跑测试，建 GitHub Release（带 tgz），带 provenance 发布到 npm（npm Trusted Publishing；包名来自仓库变量 `NPM_PACKAGE_NAME`，默认 `@hi3d/hi3d-cli`）。
-- 每次 push / PR 的 CI：Linux 构建 + 测试，三系统 × Node 18 / 20 / 22 冒烟（含 Blender 协议测试），`blender-linux` 装 bpy 5.2 跑真实 e2e。`blender-app.yml`（手动）在三系统装 Blender 应用验证。
+- 在 **`develop`** 上开发，PR 提到 develop；`main` 只放已发布代码。
+- **不手动打 tag。** release 工作流在 `develop` / `main` 上 `packages/hi3d-cli/package.json` 有变化的推送时运行，从 `version` 推导 tag，校验分支，自动打 tag、建 GitHub Release（附 tgz）、发 npm。
+- **预发布**（先测）：在 `develop` 上把 `packages/hi3d-cli/package.json` 的 `version`、`packages/cli/src/program.ts` 的 `VERSION`、`CHANGELOG.md` 顶部标题三处改成 `X.Y.Z-rc.N`，`npm run check-version` 校验，推送 → tag `vX.Y.Z-rc.N`、GitHub 预发布、npm `next`（`npm i @hi3d/hi3d-cli@next`）。
+- **正式版**：`develop` 合入 `main`，同样三处改成 `X.Y.Z`，推送 `main` → tag `vX.Y.Z`、GitHub Release、npm `latest`。
+- 版本已有 tag 的推送不会重复发布（往 main 推文档不会触发）。`develop` 上出现正式版本号、或其他分支出现预发布版本号，会在创建任何东西之前失败。
+- npm 发布：Trusted Publishing（在 npm 包设置里登记 `mathmagical-community/hi3d-cli` + `release.yml`）或 `NPM_TOKEN` secret。两者都没有时运行保持**绿色**，GitHub Release 照常创建，job summary 里给出手动 `npm publish` 命令。
+- 每次 push / PR 的 CI：`check-version`、Linux 构建 + 测试、三系统 × Node 18 / 20 / 22 冒烟（含 Blender 协议测试）、`blender-linux` 真 bpy 5.2 e2e。`blender-app.yml`（手动）在三系统装 Blender 应用验证。
 
 ## 更新 wiki
 

@@ -1,59 +1,92 @@
 name: release
-# Stable tags (vX.Y.Z) must point at a commit on `main` and publish as npm `latest`.
-# Pre-release tags (vX.Y.Z-rc.N / -beta.N / -alpha.N) may point at `develop` (or main), are marked
-# "pre-release" on GitHub and publish under the npm dist-tag `next` so `npm i @hi3d/hi3d-cli` is unaffected.
+# Releases are driven by the version in packages/hi3d-cli/package.json — nobody pushes tags by hand.
+#   develop + version X.Y.Z-rc.N  → tag vX.Y.Z-rc.N, GitHub pre-release, npm dist-tag `next`
+#   main    + version X.Y.Z       → tag vX.Y.Z, GitHub release, npm `latest`
+# A push whose version already has a tag does nothing. npm publish needs either npm Trusted Publishing (OIDC, register
+# this repo + release.yml in the package settings) or an NPM_TOKEN secret; with neither, the run stays green and prints
+# a warning with the manual command instead of failing.
 on:
   push:
-    tags: ['v*']
+    branches: [main, develop]
+    paths: ['packages/hi3d-cli/package.json']
+  workflow_dispatch:
+
+concurrency: { group: release, cancel-in-progress: false }
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     permissions: { contents: write, id-token: write }
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - name: classify the tag and check the branch it points at
-        id: tag
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          VER=$(node -p "require('./packages/hi3d-cli/package.json').version")
-          [ "$TAG" = "$VER" ] || { echo "::error::tag v$TAG does not match packages/hi3d-cli/package.json version $VER"; exit 1; }
-          git fetch origin main develop
-          if [[ "$TAG" == *-* ]]; then
-            git merge-base --is-ancestor "$GITHUB_SHA" origin/develop || git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
-              || { echo "::error::pre-release tag must point at develop or main"; exit 1; }
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"; echo "npm_tag=next" >> "$GITHUB_OUTPUT"
-          else
-            git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::stable tag $GITHUB_REF_NAME is not on main; release stable versions from main only"; exit 1; }
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"; echo "npm_tag=latest" >> "$GITHUB_OUTPUT"
-          fi
       - uses: actions/setup-node@v4
         with: { node-version: 22, registry-url: 'https://registry.npmjs.org' }
-      - run: npm ci
-      - run: npm run build && npm test
-      - run: npm run release
+      - name: decide what (if anything) to release
+        id: plan
+        run: |
+          node scripts/check-version.mjs
+          VER=$(node -p "require('./packages/hi3d-cli/package.json').version")
+          TAG="v$VER"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "$TAG already exists — nothing to release"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [[ "$VER" == *-* ]]; then
+            [[ "$GITHUB_REF_NAME" == "develop" || "$GITHUB_REF_NAME" == "main" ]] || { echo "::error::pre-release versions are released from develop (or main), not $GITHUB_REF_NAME"; exit 1; }
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"; echo "npm_tag=next" >> "$GITHUB_OUTPUT"
+          else
+            [[ "$GITHUB_REF_NAME" == "main" ]] || { echo "::error::stable version $VER must be released from main (this is $GITHUB_REF_NAME); use X.Y.Z-rc.N on develop"; exit 1; }
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"; echo "npm_tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"; echo "tag=$TAG" >> "$GITHUB_OUTPUT"; echo "version=$VER" >> "$GITHUB_OUTPUT"
+      - if: steps.plan.outputs.skip == 'false'
+        run: npm ci
+      - if: steps.plan.outputs.skip == 'false'
+        run: npm run build && npm test
+      - if: steps.plan.outputs.skip == 'false'
+        run: npm run release
         env:
-          # published name; override with a repository variable when the bare `hi3d-cli` name becomes available
           NPM_PACKAGE_NAME: ${{ vars.NPM_PACKAGE_NAME || '@hi3d/hi3d-cli' }}
-          # optional: bake site constants for `--mode web` into the published bundle
           HI3D_WEB_CONSTANTS_JSON: ${{ secrets.HI3D_WEB_CONSTANTS_JSON }}
-      - run: cd release && npm pack ./hi3d-cli
+      - if: steps.plan.outputs.skip == 'false'
+        run: cd release && npm pack ./hi3d-cli
+      - name: create the tag
+        if: steps.plan.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"; git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.plan.outputs.tag }}" -m "hi3d-cli ${{ steps.plan.outputs.version }}"
+          git push origin "${{ steps.plan.outputs.tag }}"
       - name: GitHub Release with the packed tarball
+        if: steps.plan.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.plan.outputs.tag }}
           files: 'release/*.tgz'
           generate_release_notes: true
-          prerelease: ${{ steps.tag.outputs.prerelease == 'true' }}
-      - name: skip npm publish if this version already exists
-        id: exists
+          prerelease: ${{ steps.plan.outputs.prerelease == 'true' }}
+      - name: npm publish (OIDC → NPM_TOKEN → skip with a warning)
+        if: steps.plan.outputs.skip == 'false'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TAG: ${{ steps.plan.outputs.npm_tag }}
         run: |
+          set +e
           NAME=$(node -p "require('./release/hi3d-cli/package.json').name")
-          VER=$(node -p "require('./release/hi3d-cli/package.json').version")
-          if npm view "$NAME@$VER" version >/dev/null 2>&1; then echo "published=true" >> "$GITHUB_OUTPUT"; echo "$NAME@$VER already on npm, skipping publish"; else echo "published=false" >> "$GITHUB_OUTPUT"; fi
-      # Trusted Publishing (OIDC): register this repo + workflow as a trusted publisher in the npm package
-      # settings; no token needed. npm >= 11.5 is required for OIDC publishing.
-      - if: steps.exists.outputs.published == 'false'
-        run: npm install -g npm@latest
-      - if: steps.exists.outputs.published == 'false'
-        run: cd release/hi3d-cli && npm publish --access public --provenance --tag ${{ steps.tag.outputs.npm_tag }}
+          VER=${{ steps.plan.outputs.version }}
+          if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+            echo "$NAME@$VER is already on npm"; echo "### npm: $NAME@$VER already published" >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          npm install -g npm@latest >/dev/null 2>&1
+          cd release/hi3d-cli
+          if npm publish --access public --provenance --tag "$NPM_TAG"; then
+            echo "### npm: published $NAME@$VER as \`$NPM_TAG\` (Trusted Publishing)" >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          if [ -n "$NPM_TOKEN" ]; then
+            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+            if npm publish --access public --tag "$NPM_TAG"; then
+              echo "### npm: published $NAME@$VER as \`$NPM_TAG\` (NPM_TOKEN)" >> "$GITHUB_STEP_SUMMARY"; exit 0
+            fi
+          fi
+          echo "::warning::npm publish skipped: no Trusted Publisher registered for this repo and no NPM_TOKEN secret. Publish manually: download the tarball from the GitHub Release and run: npm publish <tgz> --access public --tag $NPM_TAG"
+          echo "### npm: NOT published — register Trusted Publishing (npm package settings → $GITHUB_REPOSITORY / release.yml) or add an NPM_TOKEN secret. Manual: \`npm publish hi3d-hi3d-cli-$VER.tgz --access public --tag $NPM_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          exit 0

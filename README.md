@@ -243,10 +243,10 @@ Layout: `packages/core` (Hi3D API clients, config), `packages/blender` (backend 
 `python/executor.py`, session), `packages/mcp` (tool table + MCP server), `packages/cli` (commander program),
 `packages/hi3d-cli` (npm package metadata), `skill/` (agent skill), `test/`, `docs/wiki/` (wiki sources).
 
-Branches: work goes to `develop`; `main` holds released code. Releases: pre-releases are tagged `vX.Y.Z-rc.N` on `develop`
-and published to npm as `next` (`npm i @hi3d/hi3d-cli@next`); stable `vX.Y.Z` tags must be on `main` and publish as
-`latest`. The workflow checks the branch, runs the smoke matrix (macOS / Windows / Linux × Node 18 / 20 / 22) and
-publishes to npm with provenance. Contributions: see [CONTRIBUTING.md](CONTRIBUTING.md).
+Branches: work goes to `develop`; `main` holds released code. Releases are driven by the version in `packages/hi3d-cli/package.json` — no manual tags: `X.Y.Z-rc.N` pushed on
+`develop` becomes a GitHub pre-release and npm `next` (`npm i @hi3d/hi3d-cli@next`); `X.Y.Z` pushed on `main`
+becomes the GitHub Release and npm `latest`. `npm run check-version` verifies package.json, the CLI `VERSION` and the
+CHANGELOG agree (CI enforces it). Contributions: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Community
 
