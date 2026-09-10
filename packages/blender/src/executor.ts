@@ -158,10 +158,31 @@ export class BlenderExecutor {
       /* ignore */
     }
     const p = this.proc;
+    const lf = this.logFile;
+    const done = () => {
+      lf?.end();
+    };
+    p.once('exit', done);
     setTimeout(() => {
       if (p.exitCode === null) p.kill();
+      done();
     }, 3000).unref();
     this.proc = undefined;
     this.ready = undefined;
+    this.logFile = undefined;
+  }
+
+  /** Close and wait for the process to exit (tests, orderly shutdown). */
+  async closeAndWait(timeoutMs = 5000): Promise<void> {
+    const p = this.proc;
+    this.close();
+    if (!p || p.exitCode !== null) return;
+    await new Promise<void>((resolve) => {
+      const t = setTimeout(resolve, timeoutMs);
+      p.once('exit', () => {
+        clearTimeout(t);
+        resolve();
+      });
+    });
   }
 }

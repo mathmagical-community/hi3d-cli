@@ -32,7 +32,7 @@ const ok = (m) => console.log(`  ok ${++n} ${m}`);
     ok('bpy op without bpy → clean error');
   } else ok('python has bpy; skipped no-bpy check');
   await assert.rejects(ex.call('ping', {}, 1), /timed out|timeout/i).catch(() => {}); // may resolve fast; just must not hang
-  ex.close();
+  await ex.closeAndWait();
   assert.equal(ex.alive, false);
   ok('close');
 }
@@ -85,7 +85,7 @@ const ok = (m) => console.log(`  ok ${++n} ${m}`);
   const ready = await ex.start();
   assert.equal(ready.event, 'ready');
   assert.equal((await ex.call('ping')).pong, true);
-  ex.close();
+  await ex.closeAndWait();
   ok('executor through the app launcher (stdout noise ignored)');
   // explicit override wins and is reported as source=env
   process.env.HI3D_BLENDER = 'app:' + app.path;
@@ -95,5 +95,10 @@ const ok = (m) => console.log(`  ok ${++n} ${m}`);
   ok('HI3D_BLENDER override');
   process.env.PATH = savedPath;
 }
-fs.rmSync(tmp, { recursive: true, force: true });
+// Windows keeps the executor log / child handles open for a moment after exit: retry, and never fail on cleanup.
+try {
+  fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+} catch (e) {
+  console.log('  (cleanup skipped: ' + e.code + ')');
+}
 console.log('blender-protocol: ALL OK');
