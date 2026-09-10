@@ -165,7 +165,7 @@ Layout: `packages/core` (Hi3D API clients, config/profiles), `packages/blender` 
 `packages/cli` (commander program), `packages/hi3d-cli` (npm package metadata), `scripts/build-release.mjs`,
 `skill/` (agent skill), `test/` (mock servers and e2e).
 
-Releases: push a tag `v*` — GitHub Actions runs the smoke matrix (macOS / Windows / Linux × Node 18 / 20 / 22)
+Branches: day-to-day work goes to `develop`; `main` holds released code. Releases: push a tag `v*` on a `main` commit — the workflow refuses tags that are not on `main`, then GitHub Actions runs the smoke matrix (macOS / Windows / Linux × Node 18 / 20 / 22)
 and publishes to npm with provenance (`NPM_TOKEN` secret required).
 
 ## License
