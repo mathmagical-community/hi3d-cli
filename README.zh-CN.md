@@ -57,7 +57,7 @@ hi3d-cli blender_load hi3d-out/cat.glb && hi3d-cli blender_scale_to_size 80 && h
 | 方式 | 命令 | 适合谁 |
 |---|---|---|
 | **开放平台 AK/SK** | `hi3d-cli login --mode ak --ak <AK> --sk <SK>` | API 用户。密钥在 https://platform.hi3d.ai/console/apiKey 创建。按量计费，所有命令可用。 |
-| **hi3d.ai 账号** | `hi3d-cli login --mode web --account you@example.com` | 网站用户。与网站共用积分。密码提示输入不回显，也可 `--cookie` 粘贴浏览器 Cookie。只支持生成 / 查询 / 下载 / 余额。 |
+| **hi3d.ai 账号** | `hi3d-cli login --mode web` | 网站用户。与网站共用积分。会打开浏览器到 hi3d.ai 授权页，点一次确认，会话就交回 CLI（PKCE，密码不经过 CLI）。`--no-browser` 只打印链接（无浏览器的机器把跳转后的地址粘回来即可）；`--account you@example.com` 仍可用旧的账号密码登录；`--cookie` 粘贴浏览器 Cookie。只支持生成 / 查询 / 下载 / 余额。 |
 
 不带参数的 `hi3d-cli login` 会交互式询问。登录后 `hi3d-cli who_am_i` 查看余额、模型目录和当前模式不支持的命令。
 

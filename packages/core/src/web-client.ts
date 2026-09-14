@@ -194,7 +194,7 @@ export class Hi3DWebClient {
     }
   }
 
-  private headers(extra: Record<string, string> = {}): Record<string, string> {
+  private headers(extra: Record<string, string> = {}, opts: { browserHeaders?: boolean } = {}): Record<string, string> {
     const h: Record<string, string> = {
       accept: 'application/json',
       appid: WEB_APPID,
@@ -202,25 +202,27 @@ export class Hi3DWebClient {
       'web-id': this.profile.webId!,
       tz: process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
       'accept-language': 'en-US',
-      referer: `${this.baseUrl}/workspace?panel=generate-3d`,
-      origin: this.baseUrl,
       'user-agent': this.userAgent,
       ...proxyHeaders(),
       ...extra,
     };
+    if (opts.browserHeaders !== false) {
+      h.referer = `${this.baseUrl}/workspace?panel=generate-3d`;
+      h.origin = this.baseUrl;
+    }
     if (this.cookies.size) h.cookie = this.cookieHeader;
     if (this.profile.token) h.token = this.profile.token;
     return h;
   }
 
-  async request<T>(method: 'GET' | 'POST', p: string, init: { body?: unknown; query?: Record<string, string>; retryAuth?: boolean } = {}): Promise<WebEnvelope<T>> {
+  async request<T>(method: 'GET' | 'POST', p: string, init: { body?: unknown; query?: Record<string, string>; retryAuth?: boolean; /** omit origin/referer (the authorization-code exchange rejects browser-style requests) */ browserHeaders?: boolean } = {}): Promise<WebEnvelope<T>> {
     if (!p || !WEB_APPID) throw new Hi3DError('web login is not configured in this build (see web-constants.example.ts / HI3D_WEB_CONSTANTS_JSON)', { code: 'WEB_NOT_CONFIGURED' });
     const url = new URL(this.baseUrl + p);
     for (const [k, v] of Object.entries(init.query ?? {})) url.searchParams.set(k, v);
     const isForm = init.body instanceof FormData;
     const res = await this.fetchImpl(url, {
       method,
-      headers: this.headers(init.body !== undefined && !isForm ? { 'content-type': 'application/json' } : {}),
+      headers: this.headers(init.body !== undefined && !isForm ? { 'content-type': 'application/json' } : {}, { browserHeaders: init.browserHeaders }),
       body: init.body === undefined ? undefined : isForm ? (init.body as FormData) : JSON.stringify(init.body),
       redirect: 'manual',
     });
@@ -232,7 +234,7 @@ export class Hi3DWebClient {
     } catch {
       throw new Hi3DError(`Unexpected response from ${p}: HTTP ${res.status} ${text.slice(0, 200)}`, { code: res.status, status: res.status });
     }
-    if (body.code === 401 && init.retryAuth !== false && p !== WEB_PATHS.renewalToken && p !== WEB_PATHS.loginAccount) {
+    if (body.code === 401 && init.retryAuth !== false && p !== WEB_PATHS.renewalToken && p !== WEB_PATHS.loginAccount && p !== WEB_PATHS.authorizeToken) {
       // try to renew once, then retry
       try {
         await this.request('GET', WEB_PATHS.renewalToken, { retryAuth: false });
@@ -260,6 +262,32 @@ export class Hi3DWebClient {
     this.saveSession({ token: this.profile.token, account, loginAt: Date.now(), webLogin: 'password' });
     const me = await this.userInfo().catch(() => undefined);
     return { login: data, user: me };
+  }
+
+  /** Browser authorization: URL of the site's page that lets a signed-in user approve this CLI (loopback redirect + PKCE S256). */
+  authorizeUrl(p: { redirectUri: string; state: string; codeChallenge: string }): string {
+    if (!WEB_PATHS.authorizePage || !WEB_PATHS.authorizeToken) throw new Hi3DError('browser authorization is not configured in this build (web-constants: authorizePage / authorizeToken)', { code: 'WEB_NOT_CONFIGURED' });
+    const q = new URLSearchParams({ redirectUri: p.redirectUri, state: p.state, codeChallenge: p.codeChallenge, codeChallengeMethod: 'S256' });
+    return `${this.baseUrl}${WEB_PATHS.authorizePage}?${q.toString()}`;
+  }
+
+  /** Exchange the authorization code for a session. The site answers with the session cookie; `data` carries the user id. */
+  async loginWithAuthorizationCode(p: { code: string; codeVerifier: string; redirectUri: string; state: string }) {
+    this.cookies.clear();
+    let r: WebEnvelope<unknown>;
+    try {
+      r = await this.request<unknown>('POST', WEB_PATHS.authorizeToken, { body: p, retryAuth: false, browserHeaders: false });
+    } catch (e) {
+      const code = e instanceof Hi3DError ? e.code : undefined;
+      if (code === 401 || code === '401') throw new Hi3DError('The site rejected the authorization code (expired, already used, or PKCE mismatch). Run `hi3d-cli login --mode web` again.', { code: 'AUTH_CODE_REJECTED', status: 401 });
+      throw e;
+    }
+    const data = r.data as unknown;
+    const userId = typeof data === 'string' ? data : typeof data === 'object' && data ? ((data as Record<string, unknown>).userId as string | undefined) : undefined;
+    const token = typeof data === 'object' && data ? ((data as Record<string, unknown>).token as string | undefined) : undefined;
+    if (token) this.profile.token = token;
+    this.saveSession({ token: this.profile.token, userId: userId ? String(userId) : this.profile.userId, loginAt: Date.now(), webLogin: 'authorize' });
+    return this.userInfo();
   }
 
   /** Adopt a cookie string copied from the browser. */

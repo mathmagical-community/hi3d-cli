@@ -25,6 +25,10 @@ export const WEB_CONSTANTS = {
     submit: '',
     batchResult: '',
     pendingJobs: '',
+    /** site page that asks the signed-in user to authorize the CLI (loopback redirect + PKCE S256) */
+    authorizePage: '',
+    /** endpoint that exchanges { code, codeVerifier, redirectUri, state } for the session cookie */
+    authorizeToken: '',
   },
   /** object-storage target for image uploads (SigV4-style signed PUT) */
   store: {

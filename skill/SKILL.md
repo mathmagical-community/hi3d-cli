@@ -19,7 +19,7 @@ homepage: https://hi3d.ai
 ```bash
 which hi3d-cli || npm i -g hi3d-cli        # 或临时：npx hi3d-cli <command>
 hi3d-cli login --mode ak --ak <AK> --sk <SK>     # Hi3D 开放平台密钥 https://platform.hi3d.ai/console/apiKey，只显示一次
-hi3d-cli login --mode web --account <email>      # 或 hi3d.ai 账号（与网站共用积分）；密码会提示输入
+hi3d-cli login --mode web                        # 或 hi3d.ai 账号（与网站共用积分）：打开浏览器授权，把 stderr 里的链接给用户点；无浏览器加 --no-browser 让用户粘回跳转地址；旧方式 --account <email> --password <pw>
 hi3d-cli who_am_i                                # 新会话先调：校验凭据、余额、模型/分辨率/积分目录、当前模式不支持的命令
 ```
 

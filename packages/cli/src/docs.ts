@@ -7,7 +7,7 @@ Exit codes: 0 ok · 1 error · 2 bad arguments · 3 not logged in / auth · 4 no
 
 ## Setup (once)
   hi3d-cli login --mode ak --ak <AK> --sk <SK>          # Hi3D Open Platform keys (platform.hi3d.ai) — full feature set
-  hi3d-cli login --mode web --account <email>           # hi3d.ai account (same credits as the website); password is prompted
+  hi3d-cli login --mode web                             # hi3d.ai account (same credits as the website): browser authorization; show the user the URL printed on stderr, wait up to --timeout (300s). --no-browser: URL only. Legacy: --account <email> --password <pw>
   hi3d-cli who_am_i                                     # verify; shows balance, catalog and "unsupported" commands for this mode
 Non-interactive: pass flags or set HI3D_CLIENT_ID/HI3D_CLIENT_SECRET (ak) or HI3D_WEB_COOKIE (web). Never read stdin in agents.
 

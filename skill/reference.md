@@ -65,3 +65,4 @@
 - `POLL_TIMEOUT`：等待超时，可继续 `query_task <task_id>`。
 - `BLENDER_NOT_AVAILABLE`：没有可用 Blender → 提示安装 Blender 或（征得同意后）`hi3d-cli blender setup`。`PATH_OUTSIDE_WORKSPACE`：路径越界 → 改用 workspace 内相对路径。`BLENDER_OP_FAILED`：看 message（Python 异常）修正参数或脚本。`BLENDER_TIMEOUT`：大模型操作超时，可提高 `--timeout-s` 或先 decimate。
 - `401` / `login expired`：web 会话过期 → 重新 `hi3d-cli login --mode web`。
+- `AUTH_TIMEOUT`：浏览器授权等待超时（默认 300 秒）→ 重新 login，或 `--timeout` 加长。`AUTH_CODE_REJECTED`：授权码过期/已用/PKCE 不匹配 → 重新 login。`AUTH_DENIED`：用户在授权页拒绝。

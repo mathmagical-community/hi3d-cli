@@ -7,6 +7,9 @@
  *   hi3d configure list | get [name] | set ... | delete <name> | profile <name>
  */
 import { Command, Option } from 'commander';
+import { spawn } from 'node:child_process';
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import readline from 'node:readline/promises';
 import { Writable } from 'node:stream';
 import {
@@ -25,7 +28,9 @@ import {
   describeProfile,
   loadConfig,
   loadProfile,
+  newPkce,
   newWebId,
+  parseAuthorizationInput,
   saveConfig,
   setCurrentProfile,
   upsertProfile,
@@ -74,7 +79,20 @@ async function loginAk(o: { ak?: string; sk?: string; profile: string; endpoint?
   emit({ mode: 'ak', profile: describeProfile(profile), verified: o.verify, balance, config: saved });
 }
 
-async function loginWeb(o: { account?: string; password?: string; cookie?: string; token?: string; profile: string; endpoint?: string }, emit: Emit) {
+interface WebLoginOpts {
+  account?: string;
+  password?: string;
+  cookie?: string;
+  token?: string;
+  profile: string;
+  endpoint?: string;
+  /** browser authorization: try to open the browser (default true), fixed loopback port, seconds to wait */
+  browser?: boolean;
+  port?: number;
+  timeout?: number;
+}
+
+async function loginWeb(o: WebLoginOpts, emit: Emit) {
   const before = loadConfig();
   const profile: Profile = { name: o.profile, mode: 'web', webBase: o.endpoint ?? DEFAULT_WEB_BASE, webId: newWebId() };
   upsertProfile(profile); // create first so the client can persist cookies into it
@@ -86,18 +104,113 @@ async function loginWeb(o: { account?: string; password?: string; cookie?: strin
   }
 }
 
-async function loginWebInner(o: { account?: string; password?: string; cookie?: string; token?: string; profile: string }, profile: Profile, emit: Emit) {
+async function loginWebInner(o: WebLoginOpts, profile: Profile, emit: Emit) {
   const client = new Hi3DWebClient({ profile, userAgent: userAgentFor(CLIENT_INFO, true) });
   if (o.cookie) {
     const me = await client.loginWithCookie(o.cookie, o.token);
     return emit({ mode: 'web', method: 'cookie', profile: describeProfile(profile), user: me, config: configPath() });
   }
+  if (!o.account && !o.password) return loginWebAuthorize(o, profile, client, emit);
   const account = o.account || (await ask('hi3d.ai account (email)'));
   const password = o.password || (await ask('Password', { hidden: true }));
   if (!account || !password) throw new Hi3DError('Missing --account / --password, or --cookie.', { code: 'BAD_ARGS', status: 400 });
-  log('Signing in to hi3d.ai with your account password (transition mode; browser authorization will replace this).');
+  log('Signing in to hi3d.ai with your account password (legacy; plain `hi3d-cli login --mode web` uses browser authorization).');
   const r = await client.loginWithPassword(account, password);
   emit({ mode: 'web', method: 'password', profile: describeProfile(profile), user: r.user, config: configPath() });
+}
+
+function htmlPage(title: string, text: string): string {
+  return `<!doctype html><meta charset="utf-8"><title>${title}</title><body style="font-family:system-ui;margin:12vh auto;max-width:36em;text-align:center"><h2>${title}</h2><p>${text}</p></body>`;
+}
+
+function openBrowser(url: string): boolean {
+  try {
+    const child =
+      process.platform === 'darwin'
+        ? spawn('open', [url], { stdio: 'ignore', detached: true })
+        : process.platform === 'win32'
+          ? spawn('cmd', ['/c', 'start', '""', `"${url}"`], { stdio: 'ignore', detached: true, windowsVerbatimArguments: true })
+          : spawn('xdg-open', [url], { stdio: 'ignore', detached: true });
+    child.on('error', () => {});
+    child.unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Default web login: loopback callback + PKCE. Opens the site's authorization page in the browser; the signed-in user
+ * approves, the site redirects to http://127.0.0.1:<port>/callback?code&state, and the code is exchanged for the
+ * session. On a machine without a browser the URL is printed and the redirected URL (or code) can be pasted back.
+ */
+async function loginWebAuthorize(o: WebLoginOpts, profile: Profile, client: Hi3DWebClient, emit: Emit) {
+  const timeoutS = o.timeout && o.timeout > 0 ? o.timeout : 300;
+  const pkce = newPkce();
+  const server = http.createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(o.port ?? 0, '127.0.0.1', () => resolve());
+  });
+  const port = (server.address() as AddressInfo).port;
+  const redirectUri = `http://127.0.0.1:${port}/callback`;
+  const url = client.authorizeUrl({ redirectUri, state: pkce.state, codeChallenge: pkce.codeChallenge });
+  log(`Open this URL in your browser to authorize hi3d-cli (waiting up to ${timeoutS}s):\n  ${url}`);
+  if (o.browser !== false && openBrowser(url)) log('A browser window should open; if not, copy the URL above.');
+  let rl: readline.Interface | undefined;
+  let timer: NodeJS.Timeout | undefined;
+  const fromCallback = new Promise<string>((resolve, reject) => {
+    timer = setTimeout(() => reject(new Hi3DError(`No authorization received within ${timeoutS}s. Run \`hi3d-cli login --mode web\` again.`, { code: 'AUTH_TIMEOUT', status: 408 })), timeoutS * 1000);
+    server.on('request', (req, res) => {
+      const u = new URL(req.url ?? '/', 'http://127.0.0.1');
+      if (u.pathname !== '/callback') {
+        res.writeHead(404).end();
+        return;
+      }
+      const err = u.searchParams.get('error');
+      const code = u.searchParams.get('code');
+      const state = u.searchParams.get('state');
+      if (err) {
+        res.writeHead(400, { 'content-type': 'text/html; charset=utf-8' }).end(htmlPage('Authorization failed', `The site reported: ${err}`));
+        reject(new Hi3DError(`authorization denied: ${err}`, { code: 'AUTH_DENIED', status: 401 }));
+        return;
+      }
+      if (!code || state !== pkce.state) {
+        res.writeHead(400, { 'content-type': 'text/html; charset=utf-8' }).end(htmlPage('Authorization failed', 'Missing code or state mismatch. Run `hi3d-cli login` again.'));
+        return; // keep waiting; a stray request must not consume the attempt
+      }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(htmlPage('hi3d-cli authorized', 'You can close this window and return to the terminal.'));
+      resolve(code);
+    });
+  });
+  const fromPaste = new Promise<string>((resolve) => {
+    if (!process.stdin.isTTY) return; // agents / pipes: only the loopback callback can complete the login
+    rl = readline.createInterface({ input: process.stdin, output: process.stderr, terminal: true });
+    const prompt = () =>
+      rl!
+        .question('If the browser cannot reach this machine, paste the redirected URL (or just the code) here: ')
+        .then((ans) => {
+          const parsed = parseAuthorizationInput(ans, pkce.state);
+          if (parsed) resolve(parsed.code);
+          else if (rl) {
+            log('Not a valid authorization code / callback URL, try again.');
+            prompt();
+          }
+        })
+        .catch(() => {});
+    prompt();
+  });
+  let code: string;
+  try {
+    code = await Promise.race([fromCallback, fromPaste]);
+  } finally {
+    if (timer) clearTimeout(timer);
+    rl?.close();
+    server.closeAllConnections?.();
+    server.close();
+  }
+  const me = await client.loginWithAuthorizationCode({ code, codeVerifier: pkce.codeVerifier, redirectUri, state: pkce.state });
+  emit({ mode: 'web', method: 'authorize', profile: describeProfile(profile), user: me, config: configPath() });
 }
 
 let CLIENT_INFO: ClientInfo | undefined;
@@ -106,7 +219,7 @@ export function registerAuthCommands(program: Command, emit: Emit, fail: Fail, c
   CLIENT_INFO = clientInfo;
   program
     .command('login')
-    .description('Sign in: Open Platform AK/SK (--mode ak) or hi3d.ai account (--mode web). Interactive when flags are omitted.')
+    .description('Sign in: Open Platform AK/SK (--mode ak) or hi3d.ai account (--mode web, authorizes in your browser). Interactive when flags are omitted.')
     .addOption(new Option('--mode <mode>', 'ak | web').choices(['ak', 'web']))
     .option('-p, --profile <name>', 'profile name', 'default')
     .option('--ak <accessKey>', 'Open Platform Access Key')
@@ -114,9 +227,12 @@ export function registerAuthCommands(program: Command, emit: Emit, fail: Fail, c
     .option('--client-id <id>', 'alias of --ak')
     .option('--client-secret <secret>', 'alias of --sk')
     .option('--endpoint <url>', `API base (ak: ${DEFAULT_BASE_URL}, web: ${DEFAULT_WEB_BASE})`)
-    .option('--account <email>', 'hi3d.ai account (web mode)')
-    .option('--password <pw>', 'hi3d.ai password (web mode; prompted when omitted)')
-    .option('--cookie <header>', 'web mode: paste the Cookie header from a logged-in browser instead of a password')
+    .option('--no-browser', 'web mode: do not try to open a browser, only print the authorization URL')
+    .option('--port <n>', 'web mode: fixed loopback port for the authorization callback (default: random)', (v) => Number(v))
+    .option('--timeout <seconds>', 'web mode: how long to wait for the browser authorization (default 300)', (v) => Number(v))
+    .option('--account <email>', 'web mode: legacy account-password login instead of the browser')
+    .option('--password <pw>', 'web mode: legacy account-password login (prompted when --account is given without it)')
+    .option('--cookie <header>', 'web mode: paste the Cookie header from a logged-in browser instead')
     .option('--token <token>', 'web mode: token to send alongside the cookie (optional)')
     .option('--no-verify', 'ak mode: skip the test call')
     .action(async (o) => {
@@ -132,7 +248,7 @@ export function registerAuthCommands(program: Command, emit: Emit, fail: Fail, c
           } else mode = 'ak';
         }
         if (mode === 'ak') await loginAk({ ak: o.ak ?? o.clientId, sk: o.sk ?? o.clientSecret, profile: o.profile, endpoint: o.endpoint, verify: o.verify !== false }, emit);
-        else await loginWeb({ account: o.account, password: o.password, cookie: o.cookie, token: o.token, profile: o.profile, endpoint: o.endpoint }, emit);
+        else await loginWeb({ account: o.account, password: o.password, cookie: o.cookie, token: o.token, profile: o.profile, endpoint: o.endpoint, browser: o.browser !== false, port: o.port, timeout: o.timeout }, emit);
       } catch (e) {
         fail(e);
       }

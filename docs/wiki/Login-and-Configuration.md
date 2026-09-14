@@ -5,7 +5,7 @@
 | Mode | Command | Notes |
 |---|---|---|
 | Open Platform **AK/SK** | `hi3d-cli login --mode ak --ak <AK> --sk <SK>` | Keys from https://platform.hi3d.ai/console/apiKey (the secret is shown once). Pay-as-you-go. Every command available: generate, split, relief, multicolor, retexture. |
-| **hi3d.ai account** | `hi3d-cli login --mode web --account you@example.com` | Same credits as the website. The password is prompted and not echoed; `--password` for scripts; `--cookie "<cookie header>"` to reuse a browser session instead. Supports generate / query / download / balance only. |
+| **hi3d.ai account** | `hi3d-cli login --mode web` | Same credits as the website. Browser authorization: the CLI opens the site's authorization page, you approve while signed in, and the session comes back through a loopback redirect (PKCE S256, single-use code, state check); no password passes through the CLI. `--no-browser` prints the URL only and lets you paste the redirected URL (or code) back — for SSH / headless machines; `--port <n>` pins the callback port; `--timeout <s>` (default 300). Legacy: `--account you@example.com` (+ `--password` for scripts) or `--cookie "<cookie header>"`. Supports generate / query / download / balance only. |
 
 `hi3d-cli login` with no flags asks which mode you want. Add `--no-verify` to skip the balance check (offline / CI).
 
@@ -74,7 +74,7 @@ Web mode talks to the hi3d.ai website's own endpoints. Their identifiers are not
 | 方式 | 命令 | 说明 |
 |---|---|---|
 | 开放平台 **AK/SK** | `hi3d-cli login --mode ak --ak <AK> --sk <SK>` | 密钥在 https://platform.hi3d.ai/console/apiKey 创建（secret 只显示一次）。按量计费。所有命令可用：生成、拆件、浮雕、多色、重贴图。 |
-| **hi3d.ai 账号** | `hi3d-cli login --mode web --account you@example.com` | 与网站共用积分。密码提示输入不回显；脚本可用 `--password`；也可 `--cookie "<cookie 头>"` 复用浏览器会话。只支持生成 / 查询 / 下载 / 余额。 |
+| **hi3d.ai 账号** | `hi3d-cli login --mode web` | 与网站共用积分。浏览器授权：CLI 打开站点授权页，你在已登录状态下点确认，会话经本机回调交回 CLI（PKCE S256、一次性 code、state 校验），密码不经过 CLI。`--no-browser` 只打印链接，可把跳转后的地址（或 code）粘回来，适合 SSH / 无浏览器机器；`--port <n>` 固定回调端口；`--timeout <秒>`（默认 300）。旧方式仍可用：`--account you@example.com`（脚本加 `--password`）或 `--cookie "<cookie 头>"`。只支持生成 / 查询 / 下载 / 余额。 |
 
 不带参数的 `hi3d-cli login` 会问你选哪种。`--no-verify` 跳过余额校验（离线 / CI）。
 

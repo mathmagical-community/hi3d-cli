@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.0-rc.1 (pre-release, npm tag `next`)
+
+- `hi3d-cli login --mode web` now authorizes in the browser: the CLI opens the site's authorization page, you approve while signed in, and the site hands the session back through a loopback redirect (PKCE S256, single-use code, state check). No password passes through the CLI. `--no-browser` prints the URL only (paste the redirected URL or code back on headless machines), `--port` pins the callback port, `--timeout` sets the wait (default 300 s).
+- The account-password login stays available as an explicit fallback (`--account` / `--password`); `--cookie` is unchanged.
+
 ## 2.0.1
 
 - Requests to Hi3D now carry a standard `User-Agent` of the form `hi3d-cli/<version> (cli | mcp-stdio | mcp-http)` instead of the version-less placeholder, on every request including `login` / `logout` and the MCP server. Nothing else is sent: no telemetry, no machine or user information.

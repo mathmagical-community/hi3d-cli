@@ -39,6 +39,15 @@ export function startMockWeb(port = 0) {
       if (body.password !== encrypt(PASSWORD)) return json(res, { code: 2005, msg: 'wrong password' });
       return json(res, { code: 200, msg: 'success', data: { token: 'tok-' + seq++, userId: 'u-1' } }, { 'set-cookie': `${SESSION}; Path=/; HttpOnly` });
     }
+    if (p === '/api/auth/authorize-token') {
+      console.log(`UA ${req.headers['user-agent'] ?? ''}`);
+      const { code, codeVerifier, redirectUri, state } = body;
+      if (req.headers.origin || req.headers.referer) return json(res, { code: 1002, msg: 'not authorized' }); // the real site rejects browser-style requests here
+      if (!code || !codeVerifier || !redirectUri || !state) return json(res, { code: 1003, msg: 'param error' });
+      const expect = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+      if (code !== expect || !/^http:\/\/127\.0\.0\.1:\d+\/callback$/.test(redirectUri) || !/^[A-Za-z0-9_-]{32,128}$/.test(state)) return json(res, { code: 401, msg: 'login expired' });
+      return json(res, { code: 200, msg: 'success', data: 'u-1' }, { 'set-cookie': `${SESSION}; Path=/; HttpOnly` });
+    }
     if (!loggedIn(req)) return json(res, { code: 401, msg: 'login expired' });
 
     if (p === '/api/auth/renew') return json(res, { code: 200, data: {} });

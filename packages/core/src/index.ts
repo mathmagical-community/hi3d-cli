@@ -6,3 +6,4 @@ export * from './ops.js';
 export * from './web-client.js';
 export * from './backend.js';
 export * from './update-check.js';
+export * from './pkce.js';

@@ -13,7 +13,7 @@ PORT=8790 node test/mock-hi3d-server.mjs >"$TMP/ak.log" 2>&1 &
 PORT=8794 node test/mock-hi3d-web-server.mjs >"$TMP/web.log" 2>&1 &
 sleep 1
 export HI3D_CONFIG_DIR="$TMP/home" HI3D_NO_UPDATE_CHECK=1
-export HI3D_WEB_CONSTANTS_JSON='{"appid":"mock-appid","passwordKey":"mock-key-16bytes","paths":{"loginAccount":"/api/auth/login","logout":"/api/auth/logout","renewalToken":"/api/auth/renew","userInfo":"/api/user/info","membershipInfo":"/api/membership","pointAggregation":"/api/points","generateConfig":"/api/generate/config","tosTempToken":"/api/generate/upload-token","submit":"/api/generate/submit","batchResult":"/api/generate/batch-result","pendingJobs":"/api/generate/pending"}}'
+export HI3D_WEB_CONSTANTS_JSON='{"appid":"mock-appid","passwordKey":"mock-key-16bytes","paths":{"loginAccount":"/api/auth/login","logout":"/api/auth/logout","renewalToken":"/api/auth/renew","userInfo":"/api/user/info","membershipInfo":"/api/membership","pointAggregation":"/api/points","generateConfig":"/api/generate/config","tosTempToken":"/api/generate/upload-token","submit":"/api/generate/submit","batchResult":"/api/generate/batch-result","pendingJobs":"/api/generate/pending","authorizePage":"/authorize","authorizeToken":"/api/auth/authorize-token"}}'
 python3 - "$TMP/input.png" <<'EOF'
 import struct, zlib, sys
 w = h = 8
@@ -43,6 +43,23 @@ $H who_am_i | j "assert d['body']['authMode']=='web_session' and d['body']['bala
 $H image_to_3d https://example.com/x.png --poll --download --out "$TMP/out-web" 2>/dev/null | j "assert d['body']['state']=='success' and d['body']['files']['model']; print('image_to_3d web ok')"
 { $H split_model x.glb || true; } | j "assert d['error']['code']=='UNSUPPORTED_WEB'; print('web unsupported guard ok')"
 grep -q "^UA Mozilla/5.0 .* hi3d-cli/[^ ]* (cli)$" "$TMP/web.log" && echo "user-agent web (cli) ok" || { echo "user-agent web FAILED"; grep "^UA" "$TMP/web.log"; exit 1; }
+echo "## web mode: browser authorization (loopback callback + PKCE) against the mock"
+$H login --mode web --no-browser --endpoint http://127.0.0.1:8794 --profile auth --timeout 60 >"$TMP/auth.out" 2>"$TMP/auth.err" </dev/null &
+AUTH_PID=$!
+for i in $(seq 1 100); do grep -q "codeChallengeMethod=S256" "$TMP/auth.err" 2>/dev/null && break; sleep 0.2; done
+AUTH_URL=$(grep -o 'http://127.0.0.1:8794/authorize?[^ ]*' "$TMP/auth.err" | head -1)
+[ -n "$AUTH_URL" ] || { echo "authorize URL not printed"; cat "$TMP/auth.err"; kill $AUTH_PID; exit 1; }
+CB=$(python3 - "$AUTH_URL" <<'PY'
+import sys, urllib.parse
+q = urllib.parse.parse_qs(urllib.parse.urlparse(sys.argv[1]).query)
+assert q['codeChallengeMethod'] == ['S256'] and len(q['codeChallenge'][0]) == 43 and len(q['state'][0]) >= 32, q
+print(f"{q['redirectUri'][0]}?code={urllib.parse.quote(q['codeChallenge'][0])}&state={urllib.parse.quote(q['state'][0])}")
+PY
+)
+curl -s "${CB%%&state=*}&state=wrong-state-should-be-ignored-xxxxxxxxxxxxxxxx" | grep -q "state mismatch" && echo "callback rejects wrong state ok"
+curl -s "$CB" | grep -q "authorized" && echo "callback page ok" || { echo "callback FAILED"; kill $AUTH_PID; exit 1; }
+wait $AUTH_PID; j <"$TMP/auth.out" "assert d['ok'] and d['body']['method']=='authorize' and d['body']['user']['userId']=='u-1', d; print('browser authorization login ok')"
+$H who_am_i | j "assert d['body']['authMode']=='web_session' and d['body']['profile']['login']=='authorize' and d['body']['balance']==320; print('who_am_i via authorized session ok')"
 $H configure profile default | j "assert d['body']['current']=='default'; print('profile switch ok')"
 { HI3D_WEB_CONSTANTS_JSON='{"appid":"","passwordKey":""}' $H login --mode web --account a@b.c --password x --endpoint http://127.0.0.1:9 --profile none 2>/dev/null || true; } | j "assert d['error']['code']=='WEB_NOT_CONFIGURED'; print('web not-configured guard ok')"
 

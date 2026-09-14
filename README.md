@@ -57,7 +57,7 @@ Verify: `hi3d-cli --version`. Upgrade: `npm i -g @hi3d/hi3d-cli@latest` (the CLI
 | Mode | Command | Who it is for |
 |---|---|---|
 | **Open Platform AK/SK** | `hi3d-cli login --mode ak --ak <AK> --sk <SK>` | API users. Create keys at https://platform.hi3d.ai/console/apiKey. Pay-as-you-go, every command available. |
-| **hi3d.ai account** | `hi3d-cli login --mode web --account you@example.com` | Website users. Same credits as the website. Password is prompted (hidden); or `--cookie` pastes a browser cookie. Generate / query / download / balance only. |
+| **hi3d.ai account** | `hi3d-cli login --mode web` | Website users. Same credits as the website. Opens the site in your browser; approve once and the session is handed back to the CLI (PKCE, no password through the CLI). `--no-browser` prints the URL only (headless machines: paste the redirected URL back); `--account you@example.com` keeps the legacy password login; `--cookie` pastes a browser cookie. Generate / query / download / balance only. |
 
 `hi3d-cli login` without flags asks interactively. Then check: `hi3d-cli who_am_i` (balance, catalog, and the commands unsupported in the current mode).
 
