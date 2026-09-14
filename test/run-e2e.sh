@@ -56,5 +56,7 @@ $H | head -1 | grep -q "Usage: hi3d-cli" && echo "no-arg help ok"
 echo "## MCP stdio"
 MCP_OUT="$(HI3D_BASE_URL=http://127.0.0.1:8790 IMG="$TMP/input.png" node test/mcp-stdio-smoke.mjs 2>"$TMP/mcp.err")"
 echo "$MCP_OUT" | grep -q "tools: who_am_i" && echo "$MCP_OUT" | grep -q "image_to_3d: success" && echo "$MCP_OUT" | grep -q "error path: true" && echo "mcp ok" || { echo "mcp FAILED"; echo "$MCP_OUT"; tail -20 "$TMP/mcp.err"; exit 1; }
-grep -q "^UA hi3d-cli/[^ ]* (mcp-stdio)$" "$TMP/ak.log" && echo "user-agent (mcp-stdio) ok" || { echo "user-agent mcp FAILED"; grep "^UA" "$TMP/ak.log"; exit 1; }
+VER=$(node -p "require('./packages/hi3d-cli/package.json').version")
+grep -q "^UA hi3d-cli/$VER (mcp-stdio)$" "$TMP/ak.log" && echo "user-agent (mcp-stdio, version $VER) ok" || { echo "user-agent mcp FAILED"; grep "^UA" "$TMP/ak.log"; exit 1; }
+! grep -q -E "\(unknown\)|hi3d-cli/dev" "$TMP/ak.log" "$TMP/web.log" && echo "no unknown/dev user-agent on any request (login, token, submit, mcp) ok" || { echo "unknown user-agent FOUND"; grep -h "^UA" "$TMP/ak.log" "$TMP/web.log"; exit 1; }
 echo "ALL OK"

@@ -10,12 +10,14 @@ import { Command, Option } from 'commander';
 import readline from 'node:readline/promises';
 import { Writable } from 'node:stream';
 import {
+  ClientInfo,
   CONSOLE_URL,
   DEFAULT_BASE_URL,
   DEFAULT_WEB_BASE,
   Hi3DClient,
   Hi3DError,
   Hi3DWebClient,
+  userAgentFor,
   Profile,
   clearCredentials,
   configPath,
@@ -64,7 +66,7 @@ async function loginAk(o: { ak?: string; sk?: string; profile: string; endpoint?
   const profile: Profile = { name: o.profile, mode: 'ak', accessKey: ak, secretKey: sk, endpoint: o.endpoint };
   let balance: number | undefined;
   if (o.verify) {
-    const c = new Hi3DClient({ credentials: { clientId: ak, clientSecret: sk, baseUrl: o.endpoint }, persistToken: false });
+    const c = new Hi3DClient({ credentials: { clientId: ak, clientSecret: sk, baseUrl: o.endpoint }, persistToken: false, userAgent: userAgentFor(CLIENT_INFO) });
     await c.fetchAccessToken();
     balance = (await c.balance()).totalBalance;
   }
@@ -85,7 +87,7 @@ async function loginWeb(o: { account?: string; password?: string; cookie?: strin
 }
 
 async function loginWebInner(o: { account?: string; password?: string; cookie?: string; token?: string; profile: string }, profile: Profile, emit: Emit) {
-  const client = new Hi3DWebClient({ profile });
+  const client = new Hi3DWebClient({ profile, userAgent: userAgentFor(CLIENT_INFO, true) });
   if (o.cookie) {
     const me = await client.loginWithCookie(o.cookie, o.token);
     return emit({ mode: 'web', method: 'cookie', profile: describeProfile(profile), user: me, config: configPath() });
@@ -98,7 +100,10 @@ async function loginWebInner(o: { account?: string; password?: string; cookie?: 
   emit({ mode: 'web', method: 'password', profile: describeProfile(profile), user: r.user, config: configPath() });
 }
 
-export function registerAuthCommands(program: Command, emit: Emit, fail: Fail) {
+let CLIENT_INFO: ClientInfo | undefined;
+
+export function registerAuthCommands(program: Command, emit: Emit, fail: Fail, clientInfo?: ClientInfo) {
+  CLIENT_INFO = clientInfo;
   program
     .command('login')
     .description('Sign in: Open Platform AK/SK (--mode ak) or hi3d.ai account (--mode web). Interactive when flags are omitted.')
@@ -141,7 +146,7 @@ export function registerAuthCommands(program: Command, emit: Emit, fail: Fail) {
       const cfg = loadConfig();
       const name = o.profile ?? cfg.current;
       const p = cfg.profiles[name];
-      if (p?.mode === 'web' && p.cookie) await new Hi3DWebClient({ profile: p, persist: false }).logout();
+      if (p?.mode === 'web' && p.cookie) await new Hi3DWebClient({ profile: p, persist: false, userAgent: userAgentFor(CLIENT_INFO, true) }).logout();
       emit({ removed: clearCredentials(name), profile: name, config: configPath() });
     });
 

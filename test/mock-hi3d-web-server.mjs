@@ -33,6 +33,7 @@ export function startMockWeb(port = 0) {
       if (MOCK_GLB && p.endsWith('.glb')) return res.end(await import('node:fs').then((fs) => fs.readFileSync(MOCK_GLB)));
       return res.end(Buffer.from(`fake-${p.slice(7)}`));
     }
+    if (p === '/api/auth/login') console.log(`UA ${req.headers['user-agent'] ?? ''}`);
     if (p === '/api/auth/login') {
       if (body.account !== ACCOUNT) return json(res, { code: 2004, msg: 'user does not exist' });
       if (body.password !== encrypt(PASSWORD)) return json(res, { code: 2005, msg: 'wrong password' });

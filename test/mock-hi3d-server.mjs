@@ -19,6 +19,7 @@ export function startMock(port = 0) {
     const p = url.pathname;
     const auth = req.headers.authorization ?? '';
 
+    if (p === '/open-api/v1/auth/token') console.log(`UA ${req.headers['user-agent'] ?? ''}`);
     if (p === '/open-api/v1/auth/token') {
       const expect = 'Basic ' + Buffer.from(`${AK}:${SK}`).toString('base64');
       if (auth !== expect) return unauthorized(res);

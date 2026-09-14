@@ -11,7 +11,7 @@ import { registerBlenderCommands } from './blender-cmds.js';
 import { registerAuthCommands } from './auth-cmds.js';
 import { checkForUpdate } from './update-check.js';
 
-export const VERSION = '2.0.1-rc.1';
+export const VERSION = '2.0.1-rc.2';
 /** npm package name used for the update hint; overridden at release build via NPM_PACKAGE_NAME */
 export const PACKAGE_NAME = process.env.HI3D_NPM_NAME ?? 'hi3d-cli';
 
@@ -138,7 +138,7 @@ export function buildProgram(): Command {
       if (thisCmd.opts().updateCheck !== false) await checkForUpdate(PACKAGE_NAME, VERSION).catch(() => {});
     });
 
-  registerAuthCommands(program, emit, fail);
+  registerAuthCommands(program, emit, fail, { channel: 'cli', version: VERSION });
 
   program
     .command('status')
@@ -165,8 +165,8 @@ export function buildProgram(): Command {
     .option('--require-auth', 'HTTP: reject requests without Authorization header')
     .option('--no-scripts', 'do not expose blender_run_script (only fixed recipes)')
     .action(async (o) => {
-      if (o.http !== undefined) await runHttp(Number(o.http) || 8787, { requireAuth: !!o.requireAuth });
-      else await runStdio({ outDir: program.opts().out, workspace: program.opts().workspace, confinePaths: !program.opts().allowAnyPath, scripts: o.scripts !== false });
+      if (o.http !== undefined) await runHttp(Number(o.http) || 8787, { requireAuth: !!o.requireAuth, version: VERSION });
+      else await runStdio({ version: VERSION, outDir: program.opts().out, workspace: program.opts().workspace, confinePaths: !program.opts().allowAnyPath, scripts: o.scripts !== false });
     });
 
   program

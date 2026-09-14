@@ -16,6 +16,8 @@ import { Credentials, loadCredentials } from '@hi3d/core';
 import { SERVER_VERSION, createServer } from './server.js';
 
 export interface StdioOptions {
+  /** version reported in the User-Agent (the CLI passes its own; default SERVER_VERSION) */
+  version?: string;
   outDir?: string;
   workspace?: string;
   confinePaths?: boolean;
@@ -23,7 +25,7 @@ export interface StdioOptions {
 }
 
 export async function runStdio(opts: StdioOptions = {}) {
-  const { server, ctx } = createServer({ mode: 'local', outDir: opts.outDir, workspace: opts.workspace, confinePaths: opts.confinePaths, scripts: opts.scripts, clientInfo: { channel: 'mcp-stdio', version: SERVER_VERSION }, log: (m) => process.stderr.write(m + '\n') });
+  const { server, ctx } = createServer({ mode: 'local', outDir: opts.outDir, workspace: opts.workspace, confinePaths: opts.confinePaths, scripts: opts.scripts, clientInfo: { channel: 'mcp-stdio', version: opts.version ?? SERVER_VERSION }, log: (m) => process.stderr.write(m + '\n') });
   const transport = new StdioServerTransport();
   const shutdown = () => {
     ctx.dispose();
@@ -53,7 +55,7 @@ function credsFromHeader(h: string | undefined): Credentials | undefined {
   return { clientId: raw.slice(0, i), clientSecret: raw.slice(i + 1) };
 }
 
-export async function runHttp(port: number, opts: { path?: string; requireAuth?: boolean } = {}) {
+export async function runHttp(port: number, opts: { path?: string; requireAuth?: boolean; version?: string } = {}) {
   const mcpPath = opts.path ?? '/mcp';
   const serverCreds = loadCredentials();
   const httpServer = http.createServer(async (req, res) => {
@@ -74,7 +76,7 @@ export async function runHttp(port: number, opts: { path?: string; requireAuth?:
       return;
     }
     // stateless: fresh server + transport per request
-    const { server, ctx } = createServer({ mode: 'remote', credentials: creds, clientInfo: { channel: 'mcp-http', version: SERVER_VERSION }, log: (m) => process.stderr.write(m + '\n') });
+    const { server, ctx } = createServer({ mode: 'remote', credentials: creds, clientInfo: { channel: 'mcp-http', version: opts.version ?? SERVER_VERSION }, log: (m) => process.stderr.write(m + '\n') });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => {
       transport.close();

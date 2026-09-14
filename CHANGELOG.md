@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1-rc.2 (pre-release, npm tag `next`)
+
+- `login` / `logout` requests now carry the same `hi3d-cli/<version> (cli)` User-Agent as every other command (rc.1 sent `hi3d-cli/dev (unknown)`), and the MCP server reports the CLI's real version instead of a hard-coded one.
+
 ## 2.0.1-rc.1 (pre-release, npm tag `next`)
 
 - Requests to Hi3D now carry a standard `User-Agent` of the form `hi3d-cli/<version> (cli | mcp-stdio | mcp-http)` instead of the version-less placeholder. Nothing else is sent: no telemetry, no machine or user information.
