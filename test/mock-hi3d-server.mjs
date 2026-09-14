@@ -47,6 +47,7 @@ export function startMock(port = 0) {
       if (p.includes('submit-task') && !fields.some((f) => /^(images|image_url|multi_images|multi_images_url|mesh|mesh_url)$/.test(f))) {
         return json(res, 200, { code: 10031005, msg: 'missing image' });
       }
+      console.log(`UA ${req.headers['user-agent'] ?? ''}`);
       const prefix = p.includes('/split/') ? 'split' : p.includes('/depth/') ? 'depth' : p.includes('muilticolor') ? 'multicolor' : '';
       const id = create(prefix);
       tasks.get(id).fields = fields;

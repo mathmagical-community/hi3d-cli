@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1-rc.1 (pre-release, npm tag `next`)
+
+- Requests to Hi3D now carry a standard `User-Agent` of the form `hi3d-cli/<version> (cli | mcp-stdio | mcp-http)` instead of the version-less placeholder. Nothing else is sent: no telemetry, no machine or user information.
+
 ## 2.0.0
 
 - Headless Blender integration: new `blender_*` tools / commands (load, inspect, run_script, render_preview, export, session, scale_to_size, center, transform, decimate, repair, split_loose, join, delete_objects, apply_modifiers, hollow) and `retexture_model` (Hi3D `request_type=texture` for an edited GLB).

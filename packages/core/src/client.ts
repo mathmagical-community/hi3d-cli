@@ -3,7 +3,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { Hi3DError, KNOWN_ERROR_CODES } from './errors.js';
-import { Credentials, DEFAULT_BASE_URL, fetchViaProxy, loadCredentials, proxyHeaders, saveCredentials } from './config.js';
+import { Credentials, DEFAULT_BASE_URL, fetchViaProxy, loadCredentials, proxyHeaders, saveCredentials, userAgentFor } from './config.js';
 import {
   DEPTH_FORMATS,
   DepthFormat,
@@ -145,7 +145,7 @@ export class Hi3DClient {
     this.baseUrl = (opts.baseUrl || process.env.HI3D_BASE_URL || creds.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '');
     this.fetchImpl = opts.fetch ?? fetch;
     this.persistToken = opts.persistToken ?? !opts.credentials;
-    this.userAgent = opts.userAgent ?? 'hi3d-agent/0.1';
+    this.userAgent = opts.userAgent ?? userAgentFor();
   }
 
   // ---------- auth ----------

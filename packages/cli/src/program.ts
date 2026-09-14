@@ -11,7 +11,7 @@ import { registerBlenderCommands } from './blender-cmds.js';
 import { registerAuthCommands } from './auth-cmds.js';
 import { checkForUpdate } from './update-check.js';
 
-export const VERSION = '2.0.0';
+export const VERSION = '2.0.1-rc.1';
 /** npm package name used for the update hint; overridden at release build via NPM_PACKAGE_NAME */
 export const PACKAGE_NAME = process.env.HI3D_NPM_NAME ?? 'hi3d-cli';
 
@@ -113,7 +113,7 @@ function addToolCommand(program: Command, t: ToolDef) {
     if (t.name === 'blender_run_script' && typeof args.code === 'string' && args.code.startsWith('@')) args.code = fs.readFileSync(args.code.slice(1), 'utf8');
     const parsed = z.object(t.schema).safeParse(args);
     if (!parsed.success) fail(new Hi3DError('Invalid arguments: ' + parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '), { code: 'BAD_ARGS', status: 400 }));
-    const ctx = makeContext({ mode: 'local', outDir: program.opts().out, workspace: program.opts().workspace, confinePaths: !program.opts().allowAnyPath, log });
+    const ctx = makeContext({ mode: 'local', outDir: program.opts().out, workspace: program.opts().workspace, confinePaths: !program.opts().allowAnyPath, clientInfo: { channel: 'cli', version: VERSION }, log });
     try {
       const r = await t.handler(parsed.data, ctx);
       emit(r instanceof ToolResult ? r.body : r);

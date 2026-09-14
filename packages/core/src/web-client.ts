@@ -13,7 +13,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { Hi3DError } from './errors.js';
-import { DEFAULT_WEB_BASE, Profile, fetchViaProxy, proxyHeaders, saveWebSession } from './config.js';
+import { DEFAULT_WEB_BASE, Profile, fetchViaProxy, proxyHeaders, saveWebSession, userAgentFor } from './config.js';
 import { FileRef, ImageTo3DOptions, PollOptions, TERMINAL_STATES, TaskKind, TaskResult, TaskState, extOf, sleep } from './client.js';
 
 import { loadWebConstants } from './web-constants-loader.js';
@@ -146,11 +146,12 @@ export class Hi3DWebClient {
   readonly profile: Profile;
   private readonly fetchImpl: typeof fetch;
   private readonly persist: boolean;
-  private readonly userAgent = 'Mozilla/5.0 (X11; Linux x86_64) hi3d-cli/0.1';
+  private readonly userAgent: string;
   private cookies = new Map<string, string>();
 
-  constructor(opts: { profile: Profile; fetch?: typeof fetch; persist?: boolean; baseUrl?: string }) {
+  constructor(opts: { profile: Profile; fetch?: typeof fetch; persist?: boolean; baseUrl?: string; userAgent?: string }) {
     this.profile = opts.profile;
+    this.userAgent = opts.userAgent ?? userAgentFor(undefined, true);
     this.baseUrl = (opts.baseUrl || process.env.HI3D_BASE_URL || opts.profile.webBase || DEFAULT_WEB_BASE).replace(/\/+$/, '');
     this.fetchImpl = opts.fetch ?? fetch;
     this.persist = opts.persist ?? opts.profile.name !== 'env';

@@ -46,6 +46,7 @@ export function startMockWeb(port = 0) {
     if (p === '/api/points') return json(res, { code: 200, data: { credits: 320, membershipLevel: 'Pro' } });
     if (p === '/api/generate/config') return json(res, { code: 200, data: { isKol: false, feVersion: '1.0.0' } });
     if (p === '/api/generate/upload-token') return json(res, { code: 200, data: { accessKeyId: 'AK', secretAccessKey: 'SK', sessionKey: 'ST' } });
+    if (p === '/api/generate/submit') console.log(`UA ${req.headers['user-agent'] ?? ''}`);
     if (p === '/api/generate/submit') {
       const src = body?.otherParam?.multiViewSourceImageList?.[0]?.sourceOriginImageUrl;
       if (!src) return json(res, { code: 400, msg: 'missing image' });

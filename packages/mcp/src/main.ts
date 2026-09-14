@@ -13,7 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { Credentials, loadCredentials } from '@hi3d/core';
-import { createServer } from './server.js';
+import { SERVER_VERSION, createServer } from './server.js';
 
 export interface StdioOptions {
   outDir?: string;
@@ -23,7 +23,7 @@ export interface StdioOptions {
 }
 
 export async function runStdio(opts: StdioOptions = {}) {
-  const { server, ctx } = createServer({ mode: 'local', outDir: opts.outDir, workspace: opts.workspace, confinePaths: opts.confinePaths, scripts: opts.scripts, log: (m) => process.stderr.write(m + '\n') });
+  const { server, ctx } = createServer({ mode: 'local', outDir: opts.outDir, workspace: opts.workspace, confinePaths: opts.confinePaths, scripts: opts.scripts, clientInfo: { channel: 'mcp-stdio', version: SERVER_VERSION }, log: (m) => process.stderr.write(m + '\n') });
   const transport = new StdioServerTransport();
   const shutdown = () => {
     ctx.dispose();
@@ -74,7 +74,7 @@ export async function runHttp(port: number, opts: { path?: string; requireAuth?:
       return;
     }
     // stateless: fresh server + transport per request
-    const { server, ctx } = createServer({ mode: 'remote', credentials: creds, log: (m) => process.stderr.write(m + '\n') });
+    const { server, ctx } = createServer({ mode: 'remote', credentials: creds, clientInfo: { channel: 'mcp-http', version: SERVER_VERSION }, log: (m) => process.stderr.write(m + '\n') });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => {
       transport.close();

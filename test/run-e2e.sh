@@ -31,6 +31,7 @@ $H split_model "$TMP/out/cat.glb" --poll --download --out "$TMP/out" 2>/dev/null
 { $H query_task nope || true; } | j "assert not d['ok'] and str(d['error']['code'])=='40040000'; print('error path ok')"
 { $H image_to_3d --face 5 || true; } | j "assert not d['ok'] and d['error']['code']=='BAD_ARGS'; print('arg validation ok')"
 $H configure list | j "assert d['body']['current']=='default'; print('configure ok')"
+grep -q "^UA hi3d-cli/[^ ]* (cli)$" "$TMP/ak.log" && echo "user-agent (cli) ok" || { echo "user-agent FAILED"; grep "^UA" "$TMP/ak.log"; exit 1; }
 unset HI3D_BASE_URL
 
 echo "## web mode"
@@ -38,6 +39,7 @@ $H login --mode web --account user@example.com --password Passw0rd --endpoint ht
 $H who_am_i | j "assert d['body']['authMode']=='web_session' and d['body']['balance']==320; print('who_am_i web ok')"
 $H image_to_3d https://example.com/x.png --poll --download --out "$TMP/out-web" 2>/dev/null | j "assert d['body']['state']=='success' and d['body']['files']['model']; print('image_to_3d web ok')"
 { $H split_model x.glb || true; } | j "assert d['error']['code']=='UNSUPPORTED_WEB'; print('web unsupported guard ok')"
+grep -q "^UA Mozilla/5.0 .* hi3d-cli/[^ ]* (cli)$" "$TMP/web.log" && echo "user-agent web (cli) ok" || { echo "user-agent web FAILED"; grep "^UA" "$TMP/web.log"; exit 1; }
 $H configure profile default | j "assert d['body']['current']=='default'; print('profile switch ok')"
 { HI3D_WEB_CONSTANTS_JSON='{"appid":"","passwordKey":""}' $H login --mode web --account a@b.c --password x --endpoint http://127.0.0.1:9 --profile none 2>/dev/null || true; } | j "assert d['error']['code']=='WEB_NOT_CONFIGURED'; print('web not-configured guard ok')"
 
@@ -54,4 +56,5 @@ $H | head -1 | grep -q "Usage: hi3d-cli" && echo "no-arg help ok"
 echo "## MCP stdio"
 MCP_OUT="$(HI3D_BASE_URL=http://127.0.0.1:8790 IMG="$TMP/input.png" node test/mcp-stdio-smoke.mjs 2>"$TMP/mcp.err")"
 echo "$MCP_OUT" | grep -q "tools: who_am_i" && echo "$MCP_OUT" | grep -q "image_to_3d: success" && echo "$MCP_OUT" | grep -q "error path: true" && echo "mcp ok" || { echo "mcp FAILED"; echo "$MCP_OUT"; tail -20 "$TMP/mcp.err"; exit 1; }
+grep -q "^UA hi3d-cli/[^ ]* (mcp-stdio)$" "$TMP/ak.log" && echo "user-agent (mcp-stdio) ok" || { echo "user-agent mcp FAILED"; grep "^UA" "$TMP/ak.log"; exit 1; }
 echo "ALL OK"

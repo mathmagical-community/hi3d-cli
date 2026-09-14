@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Hi3DBackend, Hi3DClient, Hi3DError, Credentials, createBackend } from '@hi3d/core';
+import { Hi3DBackend, Hi3DClient, Hi3DError, Credentials, ClientInfo, createBackend, userAgentFor } from '@hi3d/core';
 import { BlenderSession } from '@hi3d/blender';
 import { ToolContext, ToolResult, activeTools } from './tools.js';
 
@@ -17,6 +17,8 @@ export interface ServerOptions {
   confinePaths?: boolean;
   /** expose blender_run_script (default true) */
   scripts?: boolean;
+  /** how this process is driven (cli / mcp-stdio / mcp-http); sent only in the standard User-Agent */
+  clientInfo?: ClientInfo;
   log?: (msg: string) => void;
 }
 
@@ -30,7 +32,7 @@ export function makeContext(o: ServerOptions): ToolContextHandle {
   const workspace = path.resolve(o.workspace ?? process.env.HI3D_WORKSPACE ?? process.cwd());
   const log = o.log;
   return {
-    client: () => (client ??= o.credentials ? new Hi3DClient({ credentials: o.credentials }) : createBackend()),
+    client: () => (client ??= o.credentials ? new Hi3DClient({ credentials: o.credentials, userAgent: userAgentFor(o.clientInfo) }) : createBackend(undefined, { clientInfo: o.clientInfo })),
     outDir: o.outDir ?? process.env.HI3D_OUT_DIR ?? path.join(workspace, 'hi3d-out'),
     allowLocalFiles: o.mode === 'local',
     baseDir: workspace,

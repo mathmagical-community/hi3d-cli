@@ -43,6 +43,7 @@ await build({
   },
   define: {
     'process.env.HI3D_NPM_NAME': JSON.stringify(npmName),
+    'process.env.HI3D_VERSION': JSON.stringify(cliPkg.version),
     // optional build-time injection of site constants (kept out of git): HI3D_WEB_APPID, HI3D_WEB_PASSWORD_KEY, HI3D_TOS_*
     ...Object.fromEntries(
       ['HI3D_WEB_CONSTANTS_JSON', 'HI3D_WEB_APPID', 'HI3D_WEB_PASSWORD_KEY', 'HI3D_STORE_REGION', 'HI3D_STORE_ENDPOINT', 'HI3D_STORE_BUCKET', 'HI3D_STORE_ASSET_HOST']

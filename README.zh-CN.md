@@ -205,6 +205,11 @@ hi3d-cli blender_run_script @edit.py             # 任意 bpy 代码；全局 bp
 | `HI3D_DISABLE_BLENDER` | 隐藏所有 Blender 工具 |
 | `HI3D_NO_UPDATE_CHECK` | 关闭新版本提示 |
 
+### 隐私
+
+hi3d-cli 像任何 HTTP 客户端一样，以标准 `User-Agent` 头向 Hi3D 自报名称、版本和运行方式（`hi3d-cli/<version> (cli | mcp-stdio | mcp-http)`）。
+不发送任何遥测，除 API 调用本身需要的内容外不发送关于你的机器或账号的任何信息。
+
 ## 7. 积分
 
 1 credit = $0.02。hi3dv3.0：2048quality **105**、2048master **455** · hitem3dv2.1：fast 25 / pro 45 · 拆件 / 多色 20 · 浮雕 10 · 重贴图与 image_to_3d 相同。

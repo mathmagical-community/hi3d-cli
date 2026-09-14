@@ -192,6 +192,24 @@ export function describeProfile(p: Profile) {
     : { name: p.name, mode: p.mode, webBase: p.webBase ?? DEFAULT_WEB_BASE, account: p.account, userId: p.userId, nickName: p.nickName, login: p.webLogin, loginAt: p.loginAt ? new Date(p.loginAt).toISOString() : undefined, hasCookie: !!p.cookie };
 }
 
+/** How this process is being driven; only ever sent as part of the standard User-Agent header. */
+export type ClientChannel = 'cli' | 'mcp-stdio' | 'mcp-http' | 'unknown';
+export interface ClientInfo {
+  channel: ClientChannel;
+  version: string;
+}
+/** Version baked into the release bundle (HI3D_VERSION); 'dev' when running from source without it. */
+export const CLIENT_VERSION = process.env.HI3D_VERSION ?? 'dev';
+
+/**
+ * Standard User-Agent: `hi3d-cli/<version> (<channel>)`. The web-session client keeps a browser-like prefix
+ * because the site only expects browsers. Nothing else about the machine or user is included.
+ */
+export function userAgentFor(info?: ClientInfo, browserLike = false): string {
+  const tag = `hi3d-cli/${info?.version ?? CLIENT_VERSION} (${info?.channel ?? 'unknown'})`;
+  return browserLike ? `Mozilla/5.0 (X11; Linux x86_64) ${tag}` : tag;
+}
+
 /** Extra headers required when traffic goes through the sandbox egress proxy. */
 export function proxyHeaders(): Record<string, string> {
   const t = process.env.HI3D_SANDBOX_TOKEN;

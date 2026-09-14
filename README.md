@@ -206,6 +206,11 @@ Exit codes: `0` ok · `1` error · `2` bad arguments · `3` not logged in / auth
 | `HI3D_DISABLE_BLENDER` | hide all Blender tools |
 | `HI3D_NO_UPDATE_CHECK` | disable the update hint |
 
+### Privacy
+
+hi3d-cli identifies itself to Hi3D with a standard `User-Agent` header (`hi3d-cli/<version> (cli | mcp-stdio | mcp-http)`),
+like any HTTP client. It sends no telemetry and nothing about your machine or account beyond what the API call itself needs.
+
 ## 7. Credits
 
 1 credit = $0.02. hi3dv3.0: 2048quality **105**, 2048master **455** · hitem3dv2.1: fast 25 / pro 45 · split / multicolor 20 · relief 10 · retexture = same as image_to_3d.
