@@ -61,6 +61,19 @@ Verify: `hi3d-cli --version`. Upgrade: `npm i -g @hi3d/hi3d-cli@latest` (the CLI
 
 `hi3d-cli login` without flags asks interactively. Then check: `hi3d-cli who_am_i` (balance, catalog, and the commands unsupported in the current mode).
 
+### hi3d.ai account: how the sign-in works
+
+Browser authorization is the default since 2.1.0. The CLI never sees your password: it opens the site's authorization page, you approve while signed in, and the site hands the session back through a loopback redirect (PKCE S256, single-use code, state check). The session is the same 14-day cookie the website uses; the CLI renews it automatically and `hi3d-cli logout` invalidates it on the server.
+
+| Situation | Command | What happens |
+|---|---|---|
+| Laptop / desktop (default) | `hi3d-cli login --mode web` | The browser opens, you approve, the terminal reports success. |
+| Server, SSH, container, no browser | `hi3d-cli login --mode web --no-browser` | The link is printed. Open it on any device and approve; the browser then lands on `http://127.0.0.1:<port>/callback?code=…`, which cannot load there — copy that address from the address bar and paste it into the waiting terminal. Or forward the port first (`ssh -L 8765:127.0.0.1:8765 user@server` on your laptop, `hi3d-cli login --mode web --port 8765` on the server) and the browser completes it by itself. |
+| Scripts without any browser | `hi3d-cli login --mode web --account you@example.com --password '…'` | Legacy account-password sign-in: the password goes to the site once and is not stored. |
+| Reuse an existing browser session | `hi3d-cli login --mode web --cookie "<Cookie header>"` | Adopts the cookie as-is. |
+
+`--timeout <seconds>` (default 300) bounds the wait; `--port <n>` pins the callback port. Only the session cookie is written to `~/.hi3d/config.json`.
+
 Profiles work like `aws configure`; config lives in `~/.hi3d/config.json` (`HI3D_CONFIG_DIR` overrides the directory):
 
 ```bash

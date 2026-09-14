@@ -4,6 +4,8 @@
 
 **Is Windows supported?** — Yes: the CLI, the MCP server and Blender editing (installed Blender or the win x64 / arm64 `bpy` wheel). The only Windows caveat is MCP clients that cannot launch `.cmd` shims — see [Agent Integration → Windows](Agent-Integration#windows).
 
+**`hi3d-cli login --mode web` on a server prints a link, and after approving the browser shows an unreachable `http://127.0.0.1:<port>/callback` page** — expected: the callback port lives on the server. Copy that full address from the browser and paste it into the waiting terminal, or forward the port first (`ssh -L 8765:127.0.0.1:8765 user@server`, then `--port 8765`). Scripts with no browser at all can still use `--account` / `--password`.
+
 **`NO_CREDENTIALS` / exit code 3** — run `hi3d-cli login`, or set `HI3D_CLIENT_ID` / `HI3D_CLIENT_SECRET`. `hi3d-cli status` shows which profile is active.
 
 **`UNSUPPORTED_WEB` / exit code 6** — the command needs Open Platform AK/SK (split, relief, multicolor, retexture). Log in with `--mode ak`.
@@ -41,6 +43,8 @@
 **`npm i -g` 后 `hi3d-cli: command not found`**——npm 全局 bin 目录不在 PATH，`npm prefix -g` 查看；Windows 重开终端。
 
 **支持 Windows 吗？**——支持：CLI、MCP server、Blender 编辑（已装 Blender 或 win x64 / arm64 的 `bpy` wheel）都可用。唯一要注意的是有些 MCP 客户端启动不了 `.cmd`，见 [Agent Integration → Windows](Agent-Integration#windows)。
+
+**服务器上 `hi3d-cli login --mode web` 打印了链接，浏览器确认后跳到打不开的 `http://127.0.0.1:<端口>/callback`**——正常现象，回调端口在服务器上。把浏览器地址栏这整串复制粘回等待中的终端即可；或先转发端口（`ssh -L 8765:127.0.0.1:8765 user@server`，再加 `--port 8765`）。完全没有浏览器的脚本仍可用 `--account` / `--password`。
 
 **`NO_CREDENTIALS` / 退出码 3**——`hi3d-cli login`，或设 `HI3D_CLIENT_ID` / `HI3D_CLIENT_SECRET`。`hi3d-cli status` 看当前 profile。
 

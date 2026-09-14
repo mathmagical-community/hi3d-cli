@@ -15,7 +15,7 @@ Generic MCP JSON (most clients):
 }
 ```
 
-Log in once with `hi3d-cli login` on the same machine (or pass `HI3D_CLIENT_ID` / `HI3D_CLIENT_SECRET` in the server's `env`).
+Log in once with `hi3d-cli login` on the same machine — `--mode web` opens the browser for authorization — or pass `HI3D_CLIENT_ID` / `HI3D_CLIENT_SECRET` in the server's `env`.
 
 ## Windows
 
@@ -112,7 +112,7 @@ The server instructions describe the loop: `who_am_i` → `image_to_3d` (downloa
 1. **MCP**——`hi3d-cli mcp` 是 stdio 的 [MCP](https://modelcontextprotocol.io) server。工具名 = CLI 命令名，参数相同；`blender_render_preview` 把渲染图作为图片内容返回，多模态模型可以直接看。`--workspace <dir>` 限制文件访问，`--no-scripts` 隐藏 `blender_run_script`。
 2. **Skill / shell**——agent 自己在 shell 里跑 `hi3d-cli`。装 skill（`skill/SKILL.md`，兼容 Agent Skills 格式）让它知道何时、怎么调：`npx skills add mathmagical-community/hi3d-cli/skill`，或把 `hi3d-cli docs` 的输出贴进上下文。
 
-通用 MCP JSON 见上面英文部分。同一台机器先 `hi3d-cli login` 一次（或在 server 的 `env` 里传 `HI3D_CLIENT_ID` / `HI3D_CLIENT_SECRET`）。
+通用 MCP JSON 见上面英文部分。同一台机器先 `hi3d-cli login` 一次（`--mode web` 会打开浏览器授权），或在 server 的 `env` 里传 `HI3D_CLIENT_ID` / `HI3D_CLIENT_SECRET`。
 
 ## Windows
 

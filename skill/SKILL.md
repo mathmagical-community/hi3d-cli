@@ -24,7 +24,8 @@ hi3d-cli who_am_i                                # 新会话先调：校验凭�
 ```
 
 - 先在对话里问用户："你是 Hi3D 开放平台的 API 用户（有 AK/SK），还是 hi3d.ai 网站用户？"再选 `--mode`，不要猜。
-- 非交互 agent 必须用 `--ak/--sk`、`--account/--password`、`--cookie` 传参，或 `HI3D_CLIENT_ID/HI3D_CLIENT_SECRET`、`HI3D_WEB_COOKIE` 环境变量；**不要让 CLI 读 stdin**。
+- 网站账号默认是浏览器授权：agent 运行 `hi3d-cli login --mode web --no-browser`，把 stderr 里的链接原样展示给用户，用户在浏览器确认；如果浏览器和 CLI 在同一台机器，回调自动完成，否则让用户把跳转到 `http://127.0.0.1:<端口>/callback?code=…` 的地址粘回终端（agent 非交互时没有粘贴入口，改用 `--account/--password` 或让用户自己在终端登录）。CLI 最多等 `--timeout`（默认 300 秒）。
+- 非交互 agent 的其他方式：`--ak/--sk`、`--account/--password`、`--cookie`，或 `HI3D_CLIENT_ID/HI3D_CLIENT_SECRET`、`HI3D_WEB_COOKIE` 环境变量；**不要让 CLI 读 stdin**。
 - 多 profile：`hi3d-cli configure list|get|set|delete|profile`，`HI3D_PROFILE=name` 切换。
 - 凭据只能通过 `hi3d-cli login` 获取并由 CLI 保存；不要自行拼接接口、不要从浏览器抓 token。
 

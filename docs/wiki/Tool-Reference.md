@@ -38,7 +38,7 @@ Output is always `{ ok, status, body }`; errors `{ ok:false, error:{ code, messa
 
 ## who_am_i
 
-Verify Hi3D credentials and return account balance plus the full capability catalog (models, resolutions, credits, formats, limits). Call this first in a new session.
+Verify Hi3D credentials and return account balance plus the full capability catalog (models, resolutions, credits, formats, limits). Also reports the CLI version under `client`; if client.update_available is true, tell the user to run client.update_command. Call this first in a new session.
 
 _No parameters._
 
@@ -243,7 +243,7 @@ Export all (or selected) mesh objects to a file in the workspace: glb, gltf, obj
 
 ## blender_session
 
-Inspect, save, reset or open the persistent scene (.hi3d/session.blend in the workspace). reset clears the scene.
+Inspect, save, reset or open the persistent scene (.hi3d/session.blend in the workspace). save --path / open --path write or read a separate .blend copy (autosave keeps targeting the session file); reset clears the scene.
 
 | Parameter | CLI flag | Type | Required | Description |
 |---|---|---|---|---|

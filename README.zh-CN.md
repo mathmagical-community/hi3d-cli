@@ -61,6 +61,19 @@ hi3d-cli blender_load hi3d-out/cat.glb && hi3d-cli blender_scale_to_size 80 && h
 
 不带参数的 `hi3d-cli login` 会交互式询问。登录后 `hi3d-cli who_am_i` 查看余额、模型目录和当前模式不支持的命令。
 
+### hi3d.ai 账号：登录方式说明
+
+2.1.0 起默认是浏览器授权登录，密码不经过 CLI：CLI 打开站点授权页，你在已登录状态下点一次确认，站点通过本机回调把会话交回 CLI（PKCE S256、一次性 code、state 校验）。会话就是网站本身的 14 天 Cookie，CLI 会自动续期，`hi3d-cli logout` 会在服务端注销。
+
+| 场景 | 命令 | 过程 |
+|---|---|---|
+| 本人电脑（默认） | `hi3d-cli login --mode web` | 自动弹浏览器，确认后终端显示登录成功。 |
+| 服务器、SSH、容器、没有浏览器 | `hi3d-cli login --mode web --no-browser` | 终端打印链接，在任意设备打开并确认；浏览器随后跳到 `http://127.0.0.1:<端口>/callback?code=…`，在那台设备上打不开是正常的，把地址栏这整串复制粘回等待中的终端即可。也可以先转发端口（电脑上 `ssh -L 8765:127.0.0.1:8765 user@server`，服务器上 `hi3d-cli login --mode web --port 8765`），浏览器就能自动完成。 |
+| 完全没有浏览器的脚本 | `hi3d-cli login --mode web --account you@example.com --password '…'` | 旧的账号密码登录：密码只发给站点一次，不保存。 |
+| 复用已有浏览器会话 | `hi3d-cli login --mode web --cookie "<Cookie 头>"` | 直接采用该 Cookie。 |
+
+`--timeout <秒>`（默认 300）限制等待时间，`--port <n>` 固定回调端口。`~/.hi3d/config.json` 里只保存会话 Cookie。
+
 多 profile 用法与 `aws configure` 一致，配置在 `~/.hi3d/config.json`（`HI3D_CONFIG_DIR` 可改目录）：
 
 ```bash

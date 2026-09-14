@@ -6,7 +6,7 @@ terminal or from any AI agent (Claude Code, Codex, Cursor, Trae / Doubao, OpenCl
 | Page | What you will find |
 |---|---|
 | [Installation](Installation) | Node, npm / npx, per-OS notes, upgrading |
-| [Login and Configuration](Login-and-Configuration) | AK/SK vs hi3d.ai account, profiles, env vars, config file |
+| [Login and Configuration](Login-and-Configuration) | AK/SK vs hi3d.ai account (browser authorization by default; password / cookie as fallbacks), profiles, env vars, config file |
 | [CLI Usage](CLI-Usage) | generate, poll, download, split / relief / multicolor / retexture, output format, exit codes |
 | [Blender Editing](Blender-Editing) | backends, `blender setup`, the edit loop, sessions, workspace confinement, performance |
 | [Agent Integration](Agent-Integration) | MCP and skill setup for every supported agent, Windows notes, example prompts |
@@ -26,7 +26,7 @@ Sources for these pages live in the repository under `docs/wiki/` — edit them 
 | 页面 | 内容 |
 |---|---|
 | [Installation](Installation) | Node、npm / npx、各系统注意事项、升级 |
-| [Login and Configuration](Login-and-Configuration) | AK/SK 与网站账号两种登录、profile、环境变量、配置文件 |
+| [Login and Configuration](Login-and-Configuration) | AK/SK 与网站账号两种登录（网站账号默认浏览器授权，账号密码 / Cookie 为备用）、profile、环境变量、配置文件 |
 | [CLI Usage](CLI-Usage) | 生成、轮询、下载、拆件 / 浮雕 / 多色 / 重贴图、输出格式、退出码 |
 | [Blender Editing](Blender-Editing) | 后端、`blender setup`、编辑流程、会话、workspace 限制、性能 |
 | [Agent Integration](Agent-Integration) | 各 agent 的 MCP / skill 接法、Windows 注意事项、示例提示词 |
