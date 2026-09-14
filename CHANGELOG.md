@@ -1,8 +1,8 @@
 # Changelog
 
-## 2.1.0-rc.1 (pre-release, npm tag `next`)
+## 2.1.0
 
-- `hi3d-cli login --mode web` now authorizes in the browser: the CLI opens the site's authorization page, you approve while signed in, and the site hands the session back through a loopback redirect (PKCE S256, single-use code, state check). No password passes through the CLI. `--no-browser` prints the URL only (paste the redirected URL or code back on headless machines), `--port` pins the callback port, `--timeout` sets the wait (default 300 s).
+- `hi3d-cli login --mode web` now authorizes in the browser: the CLI opens the site's authorization page, you approve while signed in, and the site hands the session back through a loopback redirect (PKCE S256, single-use code, state check). No password passes through the CLI. `--no-browser` prints the URL only — open it on any device, then paste the `http://127.0.0.1:<port>/callback?code=…` address the browser lands on back into the terminal (or forward the port with `ssh -L` and `--port`); `--timeout` sets the wait (default 300 s).
 - The account-password login stays available as an explicit fallback (`--account` / `--password`); `--cookie` is unchanged.
 
 ## 2.0.1
