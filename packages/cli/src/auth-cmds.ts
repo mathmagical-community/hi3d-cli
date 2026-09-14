@@ -157,6 +157,7 @@ async function loginWebAuthorize(o: WebLoginOpts, profile: Profile, client: Hi3D
   const url = client.authorizeUrl({ redirectUri, state: pkce.state, codeChallenge: pkce.codeChallenge });
   log(`Open this URL in your browser to authorize hi3d-cli (waiting up to ${timeoutS}s):\n  ${url}`);
   if (o.browser !== false && openBrowser(url)) log('A browser window should open; if not, copy the URL above.');
+  log(`After you approve, the browser is sent to http://127.0.0.1:${port}/callback. If you opened the link on ANOTHER device (this is a server / SSH session), that page cannot load there: copy its full address from the address bar and paste it below. Alternative: forward the port first with  ssh -L ${port}:127.0.0.1:${port} <this host>  and use --port ${port}.`);
   let rl: readline.Interface | undefined;
   let timer: NodeJS.Timeout | undefined;
   const fromCallback = new Promise<string>((resolve, reject) => {
@@ -188,7 +189,7 @@ async function loginWebAuthorize(o: WebLoginOpts, profile: Profile, client: Hi3D
     rl = readline.createInterface({ input: process.stdin, output: process.stderr, terminal: true });
     const prompt = () =>
       rl!
-        .question('If the browser cannot reach this machine, paste the redirected URL (or just the code) here: ')
+        .question('Paste the redirected http://127.0.0.1:…/callback?code=… URL (or just the code) here, or wait for the browser: ')
         .then((ans) => {
           const parsed = parseAuthorizationInput(ans, pkce.state);
           if (parsed) resolve(parsed.code);
