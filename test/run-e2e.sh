@@ -31,6 +31,9 @@ $H split_model "$TMP/out/cat.glb" --poll --download --out "$TMP/out" 2>/dev/null
 { $H query_task nope || true; } | j "assert not d['ok'] and str(d['error']['code'])=='40040000'; print('error path ok')"
 { $H image_to_3d --face 5 || true; } | j "assert not d['ok'] and d['error']['code']=='BAD_ARGS'; print('arg validation ok')"
 $H configure list | j "assert d['body']['current']=='default'; print('configure ok')"
+HI3D_NO_UPDATE_CHECK= CI= HI3D_NPM_REGISTRY=http://127.0.0.1:8790 $H who_am_i 2>"$TMP/upd.err" | j "c=d['body']['client']; assert c['channel']=='cli' and c['update_available'] and c['latest']=='9.9.9' and '@latest' in c['update_command'], c; print('who_am_i update nudge ok:', c['update_command'])"
+grep -q "9.9.9 available" "$TMP/upd.err" && echo "stderr update hint ok" || { echo "stderr update hint FAILED"; cat "$TMP/upd.err"; exit 1; }
+$H who_am_i | j "c=d['body']['client']; assert c['update_available'] is False and c['version']; print('who_am_i client block ok (checks disabled):', c['version'])"
 grep -q "^UA hi3d-cli/[^ ]* (cli)$" "$TMP/ak.log" && echo "user-agent (cli) ok" || { echo "user-agent FAILED"; grep "^UA" "$TMP/ak.log"; exit 1; }
 unset HI3D_BASE_URL
 

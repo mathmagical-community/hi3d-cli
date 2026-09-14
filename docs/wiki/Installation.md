@@ -37,7 +37,7 @@ Works with distro Node packages ≥ 18, NodeSource, nvm, or the snap. For Blende
 npm i -g @hi3d/hi3d-cli@latest
 ```
 
-The CLI checks npm once a day and prints a one-line hint on stderr when a newer version exists. Disable with `--no-update-check` or `HI3D_NO_UPDATE_CHECK=1`.
+The CLI checks npm once a day and prints a one-line hint on stderr when a newer version exists; `who_am_i` also reports it under `client.update_available` / `client.update_command` so agents relay it. Disable with `--no-update-check` or `HI3D_NO_UPDATE_CHECK=1`.
 
 ## Mirrors
 
@@ -90,7 +90,7 @@ hi3d-cli --version
 npm i -g @hi3d/hi3d-cli@latest
 ```
 
-CLI 每天检查一次 npm，有新版本在 stderr 提示一行；`--no-update-check` 或 `HI3D_NO_UPDATE_CHECK=1` 关闭。
+CLI 每天检查一次 npm，有新版本在 stderr 提示一行，`who_am_i` 的 `client.update_available` / `client.update_command` 也会带上，agent 会转告用户；`--no-update-check` 或 `HI3D_NO_UPDATE_CHECK=1` 关闭。
 
 ## 镜像
 

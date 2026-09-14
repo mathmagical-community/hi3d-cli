@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1-rc.3 (pre-release, npm tag `next`)
+
+- `who_am_i` now returns a `client` block (version, channel, latest npm version, `update_available`, `update_command`); the MCP instructions ask agents to relay the update command, so users on old versions get nudged from inside Claude Code / Cursor as well as from the CLI's stderr hint. Update checks stay once-a-day, 1.5 s max, off with HI3D_NO_UPDATE_CHECK / CI.
+
 ## 2.0.1-rc.2 (pre-release, npm tag `next`)
 
 - `login` / `logout` requests now carry the same `hi3d-cli/<version> (cli)` User-Agent as every other command (rc.1 sent `hi3d-cli/dev (unknown)`), and the MCP server reports the CLI's real version instead of a hard-coded one.

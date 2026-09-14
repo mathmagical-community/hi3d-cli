@@ -25,6 +25,7 @@ export function startMock(port = 0) {
       if (auth !== expect) return unauthorized(res);
       return json(res, 200, { code: 200, message: 'success', data: { accessToken: TOKEN, tokenType: 'Bearer', nonce: 'n' } });
     }
+    if (p.endsWith('/latest')) return json(res, 200, { version: '9.9.9' }); // mock npm registry for the update hint
     if (p.startsWith('/files/')) {
       res.writeHead(200, { 'content-type': 'application/octet-stream' });
       if (MOCK_GLB && p.endsWith('.glb')) return res.end(fs.readFileSync(MOCK_GLB));

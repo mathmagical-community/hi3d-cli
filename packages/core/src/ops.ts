@@ -8,6 +8,8 @@ import { CONSOLE_URL, describeProfile, loadProfile } from './config.js';
 import { FileRef, ImageTo3DOptions, PollOptions, TaskResult, inferTaskKind } from './client.js';
 import { Hi3DBackend } from './backend.js';
 import { Hi3DError } from './errors.js';
+import { ClientInfo } from './config.js';
+import { UpdateInfo, checkLatestVersion } from './update-check.js';
 
 export interface OpContext {
   client: () => Hi3DBackend;
@@ -17,6 +19,8 @@ export interface OpContext {
   allowLocalFiles: boolean;
   /** base directory for relative local paths (the workspace; default cwd) */
   baseDir?: string;
+  /** how this process is driven and which version; who_am_i reports it with an update hint */
+  clientInfo?: ClientInfo;
   log?: (msg: string) => void;
 }
 
@@ -28,11 +32,26 @@ export function toFileRef(v: string, ctx: OpContext): FileRef {
   return { path: path.resolve(ctx.baseDir ?? process.cwd(), v) };
 }
 
+/** Version + upgrade hint for who_am_i; agents are asked to relay update_command to the user. */
+async function clientBlock(ctx: OpContext) {
+  const version = ctx.clientInfo?.version ?? 'dev';
+  const u: UpdateInfo = await checkLatestVersion(version).catch(() => ({ package: '', current: version, update_available: false }));
+  return {
+    version,
+    channel: ctx.clientInfo?.channel ?? 'unknown',
+    latest: u.latest,
+    update_available: u.update_available,
+    ...(u.update_available ? { update_command: u.update_command, update_hint: `A newer hi3d-cli (${u.latest}) is available; tell the user to run: ${u.update_command}` } : {}),
+  };
+}
+
 export async function whoAmI(ctx: OpContext) {
   const profile = loadProfile();
+  const client_info = await clientBlock(ctx);
   if (!profile) {
     return {
       authenticated: false,
+      client: client_info,
       hint: `Run \`hi3d-cli login\` — Open Platform AK/SK (create at ${CONSOLE_URL}) or \`hi3d-cli login --mode web\` for a hi3d.ai account.`,
       catalog: CATALOG,
     };
@@ -46,6 +65,7 @@ export async function whoAmI(ctx: OpContext) {
     baseUrl: client.baseUrl,
     balance: bal.totalBalance,
     unsupported: profile.mode === 'web' ? ['split_model', 'image_to_relief', 'multicolor_model'] : [],
+    client: client_info,
     catalog: CATALOG,
   };
 }

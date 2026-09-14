@@ -5,15 +5,15 @@
 import fs from 'node:fs';
 import { Command, Option } from 'commander';
 import { z } from 'zod';
-import { Hi3DError, configPath, describeProfile, loadProfile } from '@hi3d/core';
+import { Hi3DError, NPM_PACKAGE_NAME, configPath, describeProfile, loadProfile } from '@hi3d/core';
 import { activeTools, listTools, makeContext, runStdio, runHttp, ToolResult, ToolDef } from '@hi3d/mcp';
 import { registerBlenderCommands } from './blender-cmds.js';
 import { registerAuthCommands } from './auth-cmds.js';
 import { checkForUpdate } from './update-check.js';
 
-export const VERSION = '2.0.1-rc.2';
+export const VERSION = '2.0.1-rc.3';
 /** npm package name used for the update hint; overridden at release build via NPM_PACKAGE_NAME */
-export const PACKAGE_NAME = process.env.HI3D_NPM_NAME ?? 'hi3d-cli';
+export const PACKAGE_NAME = NPM_PACKAGE_NAME;
 
 const log = (m: string) => process.stderr.write(m + '\n');
 

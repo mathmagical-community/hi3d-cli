@@ -47,7 +47,7 @@ Requires [Node.js](https://nodejs.org) 18 or newer (`node -v`).
 | Windows (PowerShell / cmd) | `npm i -g @hi3d/hi3d-cli` — the command is installed as `hi3d-cli.cmd`, so `hi3d-cli` works in any shell |
 | No install | `npx -y @hi3d/hi3d-cli <command>` |
 
-Verify: `hi3d-cli --version`. Upgrade: `npm i -g @hi3d/hi3d-cli@latest` (the CLI prints a one-line hint on stderr once a day when a newer version exists; `--no-update-check` disables it).
+Verify: `hi3d-cli --version`. Upgrade: `npm i -g @hi3d/hi3d-cli@latest` (the CLI prints a one-line hint on stderr once a day when a newer version exists, and `who_am_i` reports it under `client.update_available` so an agent can tell you; `--no-update-check` / `HI3D_NO_UPDATE_CHECK=1` disables the check).
 
 > The bare npm name `hi3d-cli` is held by an unrelated publisher; the package is `@hi3d/hi3d-cli`. The executable is `hi3d-cli` either way.
 > Mirrors (e.g. npmmirror) can lag a few hours after a release: add `--registry=https://registry.npmjs.org`.

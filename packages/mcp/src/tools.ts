@@ -68,7 +68,7 @@ export const HI3D_TOOLS: ToolDef[] = [
     name: 'who_am_i',
     title: 'Who am I / capabilities',
     description:
-      'Verify Hi3D credentials and return account balance plus the full capability catalog (models, resolutions, credits, formats, limits). Call this first in a new session.',
+      'Verify Hi3D credentials and return account balance plus the full capability catalog (models, resolutions, credits, formats, limits). Also reports the CLI version under `client`; if client.update_available is true, tell the user to run client.update_command. Call this first in a new session.',
     schema: {},
     handler: (_a, ctx) => whoAmI(ctx),
   },

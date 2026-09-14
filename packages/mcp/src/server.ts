@@ -36,6 +36,7 @@ export function makeContext(o: ServerOptions): ToolContextHandle {
     outDir: o.outDir ?? process.env.HI3D_OUT_DIR ?? path.join(workspace, 'hi3d-out'),
     allowLocalFiles: o.mode === 'local',
     baseDir: workspace,
+    clientInfo: o.clientInfo,
     log,
     workspace,
     blenderCtx: () => ({ session: () => (session ??= new BlenderSession({ workspace, confinePaths: o.confinePaths ?? !process.env.HI3D_BLENDER_UNCONFINED, log })), log }),
@@ -83,6 +84,7 @@ export function createServer(o: ServerOptions): { server: McpServer; ctx: ToolCo
 
 const INSTRUCTIONS = `Hi3D turns images into production-ready 3D models (hi3d.ai); the blender_* tools edit them with a headless Blender on this machine.
 
+Start with who_am_i. If who_am_i.client.update_available is true, tell the user to run client.update_command (newer versions carry fixes) and continue.
 Generate: who_am_i → image_to_3d (download=true, format glb) → the file lands in the workspace. Generation takes minutes; poll query_task every ~10s if the client cannot wait. Result URLs expire ~1h; keep files with download=true / download_asset.
 Credits: hi3dv3.0 2048quality=105, 2048master=455, v2.1 fast=25/pro=45; 1 credit = $0.02. Generate once, then iterate in Blender.
 

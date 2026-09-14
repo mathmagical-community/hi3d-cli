@@ -47,7 +47,7 @@ hi3d-cli blender_load hi3d-out/cat.glb && hi3d-cli blender_scale_to_size 80 && h
 | Windows（PowerShell / cmd） | `npm i -g @hi3d/hi3d-cli`，会装出 `hi3d-cli.cmd`，任何 shell 里直接敲 `hi3d-cli` |
 | 不安装直接用 | `npx -y @hi3d/hi3d-cli <command>` |
 
-验证：`hi3d-cli --version`。升级：`npm i -g @hi3d/hi3d-cli@latest`（有新版本时 CLI 每天在 stderr 提示一次，`--no-update-check` 关闭）。
+验证：`hi3d-cli --version`。升级：`npm i -g @hi3d/hi3d-cli@latest`（有新版本时 CLI 每天在 stderr 提示一次，`who_am_i` 的 `client.update_available` 也会带上让 agent 转告；`--no-update-check` 或 `HI3D_NO_UPDATE_CHECK=1` 关闭）。
 
 > npm 上不带 scope 的 `hi3d-cli` 被无关的第三方占用，本项目的包名是 `@hi3d/hi3d-cli`，命令名仍是 `hi3d-cli`。
 > 淘宝等镜像在发布后可能滞后几小时，可加 `--registry=https://registry.npmjs.org`。
