@@ -35,7 +35,10 @@ jobs:
             [[ "$GITHUB_REF_NAME" == "develop" || "$GITHUB_REF_NAME" == "main" ]] || { echo "::error::pre-release versions are released from develop (or main), not $GITHUB_REF_NAME"; exit 1; }
             echo "prerelease=true" >> "$GITHUB_OUTPUT"; echo "npm_tag=next" >> "$GITHUB_OUTPUT"
           else
-            [[ "$GITHUB_REF_NAME" == "main" ]] || { echo "::error::stable version $VER must be released from main (this is $GITHUB_REF_NAME); use X.Y.Z-rc.N on develop"; exit 1; }
+            if [[ "$GITHUB_REF_NAME" != "main" ]]; then
+              echo "stable version $VER is released from main only; nothing to do on $GITHUB_REF_NAME (develop is synced to main after a release)"
+              echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+            fi
             echo "prerelease=false" >> "$GITHUB_OUTPUT"; echo "npm_tag=latest" >> "$GITHUB_OUTPUT"
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"; echo "tag=$TAG" >> "$GITHUB_OUTPUT"; echo "version=$VER" >> "$GITHUB_OUTPUT"

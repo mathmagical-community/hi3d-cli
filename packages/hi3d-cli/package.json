@@ -25,6 +25,9 @@
     "bpy"
   ],
   "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "node ../../scripts/build-release.mjs"
   }

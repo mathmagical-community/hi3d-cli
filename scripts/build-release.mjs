@@ -69,6 +69,7 @@ const pkg = {
   type: 'module',
   bin: { 'hi3d-cli': 'bin/hi3d-cli.mjs' },
   files: ['bin', 'python', 'README.md', 'LICENSE'],
+  publishConfig: { access: 'public' },
   engines: { node: '>=18' },
   os: ['darwin', 'linux', 'win32'],
 };
