@@ -1,16 +1,10 @@
 # Changelog
 
-## 2.0.1-rc.3 (pre-release, npm tag `next`)
+## 2.0.1
 
-- `who_am_i` now returns a `client` block (version, channel, latest npm version, `update_available`, `update_command`); the MCP instructions ask agents to relay the update command, so users on old versions get nudged from inside Claude Code / Cursor as well as from the CLI's stderr hint. Update checks stay once-a-day, 1.5 s max, off with HI3D_NO_UPDATE_CHECK / CI.
-
-## 2.0.1-rc.2 (pre-release, npm tag `next`)
-
-- `login` / `logout` requests now carry the same `hi3d-cli/<version> (cli)` User-Agent as every other command (rc.1 sent `hi3d-cli/dev (unknown)`), and the MCP server reports the CLI's real version instead of a hard-coded one.
-
-## 2.0.1-rc.1 (pre-release, npm tag `next`)
-
-- Requests to Hi3D now carry a standard `User-Agent` of the form `hi3d-cli/<version> (cli | mcp-stdio | mcp-http)` instead of the version-less placeholder. Nothing else is sent: no telemetry, no machine or user information.
+- Requests to Hi3D now carry a standard `User-Agent` of the form `hi3d-cli/<version> (cli | mcp-stdio | mcp-http)` instead of the version-less placeholder, on every request including `login` / `logout` and the MCP server. Nothing else is sent: no telemetry, no machine or user information.
+- `who_am_i` returns a `client` block (version, channel, latest npm version, `update_available`, `update_command`); the MCP instructions ask agents to relay the update command, so users on old versions are nudged from inside Claude Code / Cursor as well as by the CLI's once-a-day stderr hint (off with `--no-update-check` / `HI3D_NO_UPDATE_CHECK=1` / `CI`).
+- Release flow: versions are driven by `packages/hi3d-cli/package.json` (`X.Y.Z-rc.N` on develop → npm `next`, `X.Y.Z` on main → npm `latest`); `scripts/check-version.mjs` enforces consistency in CI.
 
 ## 2.0.0
 
