@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.1-rc.1 (pre-release, npm tag `next`)
+## 2.1.1
 
 - `blender_transform`: rotation now works on glTF/FBX-imported objects. Importers leave objects in `QUATERNION` rotation mode, where `rotation_euler` is silently ignored; the recipe switches the object to `XYZ` (preserving its current rotation) before applying the delta and reports `rotation_mode_switched`.
 - CLI: multi-value numeric options (`--rotate-deg 0 0 90`, `--translate`, `--scale 2` / `--scale 1 2 3`, and any `number[]` / `number | number[]` parameter) are converted from shell strings before validation instead of being rejected with "expected number, received string".

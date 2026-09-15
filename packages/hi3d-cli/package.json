@@ -1,6 +1,6 @@
 {
   "name": "@hi3d/hi3d-cli",
-  "version": "2.1.1-rc.1",
+  "version": "2.1.1",
   "description": "Hi3D image-to-3D from the terminal and for AI agents (Claude Code, Codex, Cursor): login with Open Platform AK/SK or a hi3d.ai account, generate, poll, download, split, relief, multicolor; MCP server included; 2.0 edits models with headless Blender (inspect, repair, decimate, scale, render previews, export, re-texture).",
   "license": "MIT",
   "homepage": "https://github.com/mathmagical-community/hi3d-cli#readme",
