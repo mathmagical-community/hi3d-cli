@@ -71,6 +71,8 @@ $H blender status | j "assert d['ok'] and 'ready' in d['body']; print('blender s
 { HI3D_BASE_URL=http://127.0.0.1:8790 $H retexture_model "$TMP/out/cat.glb" || true; } | j "assert d['error']['code']=='BAD_ARGS'; print('retexture guard ok')"
 HI3D_BASE_URL=http://127.0.0.1:8790 $H retexture_model "$TMP/out/cat.glb" --image "$TMP/input.png" --poll 2>/dev/null | j "assert d['body']['state']=='success'; print('retexture (mock) ok')"
 node test/blender-protocol.mjs
+node test/cli-args.mjs
+{ $H blender_transform --rotate-deg 0 0 90 --scale 2 --translate 0 0 0.01 2>/dev/null || true; } | j "assert d['ok'] or d['error']['code']!='BAD_ARGS', d; print('array/union numeric options accepted by the shell parser')"
 $H | head -1 | grep -q "Usage: hi3d-cli" && echo "no-arg help ok"
 
 echo "## MCP stdio"

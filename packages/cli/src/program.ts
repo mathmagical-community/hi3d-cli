@@ -11,7 +11,7 @@ import { registerBlenderCommands } from './blender-cmds.js';
 import { registerAuthCommands } from './auth-cmds.js';
 import { checkForUpdate } from './update-check.js';
 
-export const VERSION = '2.1.0';
+export const VERSION = '2.1.1-rc.1';
 /** npm package name used for the update hint; overridden at release build via NPM_PACKAGE_NAME */
 export const PACKAGE_NAME = NPM_PACKAGE_NAME;
 
@@ -78,6 +78,42 @@ function enumValues(s: ZodAny): string[] | undefined {
   return undefined;
 }
 
+const SCALAR_KINDS = new Set(['number', 'int', 'string', 'boolean', 'enum', 'literal']);
+function unionOptions(s: ZodAny): ZodAny[] {
+  return ((s as { def?: { options?: ZodAny[] } }).def?.options ?? []) as ZodAny[];
+}
+function unionHasArray(s: ZodAny): boolean {
+  return unionOptions(s).some((o) => kindOf(unwrap(o).inner) === 'array');
+}
+
+/**
+ * Shell arguments arrive as strings (or string arrays for variadic options); convert them to what the
+ * zod schema expects: number elements inside arrays, numbers in number|number[] unions, booleans.
+ * Values that do not look numeric are left untouched so zod reports the real problem.
+ */
+export function coerceCliValue(schema: ZodAny, v: unknown): unknown {
+  const { inner } = unwrap(schema);
+  const kind = kindOf(inner);
+  const def = (inner as { def?: { element?: ZodAny } }).def;
+  if (kind === 'array') {
+    const el = def?.element;
+    const arr = Array.isArray(v) ? v : [v];
+    return el ? arr.map((x) => coerceCliValue(el, x)) : arr;
+  }
+  if (kind === 'number' || kind === 'int') return typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)) ? Number(v) : v;
+  if (kind === 'boolean') return v === 'true' ? true : v === 'false' ? false : v;
+  if (kind === 'union') {
+    const opts = unionOptions(inner);
+    const arr = Array.isArray(v) ? v : [v];
+    const scalar = opts.find((o) => SCALAR_KINDS.has(kindOf(unwrap(o).inner)));
+    const array = opts.find((o) => kindOf(unwrap(o).inner) === 'array');
+    if (arr.length === 1 && scalar && !(Array.isArray(v) && !array)) return coerceCliValue(scalar, arr[0]);
+    if (array) return coerceCliValue(array, arr);
+    return v;
+  }
+  return v;
+}
+
 function addToolCommand(program: Command, t: ToolDef) {
   const cmd = program.command(t.name).description(t.description);
   const pos = POSITIONAL[t.name];
@@ -93,7 +129,7 @@ function addToolCommand(program: Command, t: ToolDef) {
     if (kind === 'boolean') {
       cmd.addOption(new Option(`--${flag}`, desc));
       cmd.addOption(new Option(`--no-${flag}`).hideHelp());
-    } else if (kind === 'array') cmd.addOption(new Option(`--${flag} <values...>`, desc));
+    } else if (kind === 'array' || (kind === 'union' && unionHasArray(inner))) cmd.addOption(new Option(`--${flag} <values...>`, desc));
     else if (kind === 'number' || kind === 'int') cmd.addOption(new Option(`--${flag} <n>`, desc).argParser(Number));
     else if (kind === 'enum') cmd.addOption(new Option(`--${flag} <value>`, desc).choices(enumValues(inner) ?? []));
     else cmd.addOption(new Option(`--${flag} <value>`, desc));
@@ -103,12 +139,11 @@ function addToolCommand(program: Command, t: ToolDef) {
     const args: Record<string, unknown> = {};
     for (const key of Object.keys(shape)) {
       const camel = key.replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase());
-      if (opts[camel] !== undefined) args[key] = opts[camel];
+      if (opts[camel] !== undefined) args[key] = coerceCliValue(shape[key], opts[camel]);
     }
     if (pos && args[pos] === undefined) {
       const v = cliArgs[0];
-      if (typeof v === 'string') args[pos] = posKind === 'number' || posKind === 'int' ? Number(v) : v;
-      else if (Array.isArray(v) && v.length) args[pos] = v;
+      if (typeof v === 'string' || (Array.isArray(v) && v.length)) args[pos] = coerceCliValue(shape[pos], v);
     }
     if (t.name === 'blender_run_script' && typeof args.code === 'string' && args.code.startsWith('@')) args.code = fs.readFileSync(args.code.slice(1), 'utf8');
     const parsed = z.object(t.schema).safeParse(args);

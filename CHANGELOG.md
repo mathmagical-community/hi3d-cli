@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.1-rc.1 (pre-release, npm tag `next`)
+
+- `blender_transform`: rotation now works on glTF/FBX-imported objects. Importers leave objects in `QUATERNION` rotation mode, where `rotation_euler` is silently ignored; the recipe switches the object to `XYZ` (preserving its current rotation) before applying the delta and reports `rotation_mode_switched`.
+- CLI: multi-value numeric options (`--rotate-deg 0 0 90`, `--translate`, `--scale 2` / `--scale 1 2 3`, and any `number[]` / `number | number[]` parameter) are converted from shell strings before validation instead of being rejected with "expected number, received string".
+- `blender_hollow`: `use_even_offset` is now off by default (`--even-offset` to enable); on organic meshes it inflated the shell 20–30×. Any object whose bounding box grows by more than 2% is rolled back and reported in `rolled_back` / `warnings` instead of being left corrupted.
+
 ## 2.1.0
 
 - `hi3d-cli login --mode web` now authorizes in the browser: the CLI opens the site's authorization page, you approve while signed in, and the site hands the session back through a loopback redirect (PKCE S256, single-use code, state check). No password passes through the CLI. `--no-browser` prints the URL only — open it on any device, then paste the `http://127.0.0.1:<port>/callback?code=…` address the browser lands on back into the terminal (or forward the port with `ssh -L` and `--port`); `--timeout` sets the wait (default 300 s).

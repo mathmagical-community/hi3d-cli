@@ -558,17 +558,25 @@ def op_center(center=True, floor=True, origin="bottom", object=None, **_):
 @mutating
 def op_transform(object=None, translate=None, rotate_deg=None, scale=None, apply=True, **_):
     objs = mesh_objects(object)
+    switched = []
     for o in objs:
         if translate:
             o.location = [a + b for a, b in zip(o.location, translate)]
         if rotate_deg:
+            # glTF/FBX importers leave objects in QUATERNION (or AXIS_ANGLE) rotation mode, where
+            # rotation_euler is ignored by matrix_world. Switching the mode converts the current
+            # rotation, so the euler delta below is applied on top of it.
+            if o.rotation_mode != "XYZ":
+                switched.append({"object": o.name, "from": o.rotation_mode})
+                o.rotation_mode = "XYZ"
             o.rotation_euler = [a + math.radians(b) for a, b in zip(o.rotation_euler, rotate_deg)]
         if scale is not None:
             s = [scale] * 3 if isinstance(scale, (int, float)) else scale
             o.scale = [a * b for a, b in zip(o.scale, s)]
+    bpy_mod().context.view_layer.update()
     if apply:
         apply_transforms(objs, location=True)
-    return {}
+    return {"rotation_mode_switched": switched} if switched else {}
 
 
 @mutating
@@ -739,21 +747,56 @@ def op_apply_modifiers(object=None, **_):
 
 
 @mutating
-def op_hollow(wall_thickness_mm=2.0, object=None, **_):
+def op_hollow(wall_thickness_mm=2.0, even_offset=False, object=None, **_):
+    """Solidify inward. even_offset defaults to False: on organic (Hi3D) meshes Blender's even-thickness
+    correction can explode the shell by 20-30x at sharp vertices. Any object whose bounding box grows by
+    more than 2% is rolled back and reported instead of being left corrupted."""
     bpy = bpy_mod()
     warn = []
+    rolled_back = []
+    def mesh_dims(ob):
+        # bounding box straight from the vertex data (Object.dimensions can lag behind modifier_apply)
+        import array
+
+        n = len(ob.data.vertices)
+        if not n:
+            return [0.0, 0.0, 0.0]
+        buf = array.array("f", [0.0]) * (n * 3)
+        ob.data.vertices.foreach_get("co", buf)
+        xs, ys, zs = buf[0::3], buf[1::3], buf[2::3]
+        return [(max(xs) - min(xs)) * abs(ob.scale[0]), (max(ys) - min(ys)) * abs(ob.scale[1]), (max(zs) - min(zs)) * abs(ob.scale[2])]
+
     for o in mesh_objects(object):
+        dims_before = mesh_dims(o)
+        backup = o.data.copy()
         bpy.context.view_layer.objects.active = o
         mod = o.modifiers.new("hi3d_solidify", "SOLIDIFY")
         mod.thickness = -float(wall_thickness_mm) / 1000.0
         mod.offset = 1.0
-        mod.use_even_offset = True
+        mod.use_even_offset = bool(even_offset)
         mod.use_rim = False
         bpy.ops.object.modifier_apply(modifier=mod.name)
+        # An inward shell never grows the bounding box; flipped-normal patches on imperfect meshes can push
+        # outward by up to one wall, so allow max(2 %, 2 walls) per axis and roll back anything beyond that.
+        wall_m = float(wall_thickness_mm) / 1000.0
+        dims_after = mesh_dims(o)
+        growth = [(d1 - d0) for d0, d1 in zip(dims_before, dims_after)]
+        limit = [max(0.02 * d0, 2.0 * wall_m) for d0 in dims_before]
+        if any(g > lim for g, lim in zip(growth, limit)):
+            grew = max((g / d0) if d0 else 0.0 for g, d0 in zip(growth, dims_before))
+            bad = o.data
+            o.data = backup
+            bpy.data.meshes.remove(bad)
+            bpy.context.view_layer.update()
+            rolled_back.append({"object": o.name, "growth": round(grew, 3), "dimensions_before_m": [round(x, 4) for x in dims_before], "dimensions_would_be_m": [round(x, 4) for x in dims_after]})
+            warn.append(f"{o.name}: solidify enlarged the bounding box by {grew * 100:.0f}% (geometry would be corrupted); rolled back, mesh unchanged. Try blender_repair first (consistent normals), a thinner wall, or even_offset={not even_offset}.")
+        else:
+            bpy.data.meshes.remove(backup)
+            bpy.context.view_layer.update()
     t = totals()
     if t["non_manifold_edges"]:
         warn.append("result is not manifold; run blender_repair or reduce thickness")
-    return {"wall_thickness_mm": wall_thickness_mm, "warnings": warn, "experimental": True}
+    return {"wall_thickness_mm": wall_thickness_mm, "even_offset": bool(even_offset), "rolled_back": rolled_back, "warnings": warn, "experimental": True}
 
 
 OPS = {

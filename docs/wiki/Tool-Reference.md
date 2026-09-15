@@ -275,7 +275,7 @@ Move the model so its bounding box is centred on X/Y and (with floor) its lowest
 
 ## blender_transform
 
-Translate (m), rotate (degrees) and/or scale objects, then apply. Returns before/after totals (faces, vertices, non-manifold edges, dimensions).
+Translate (m), rotate (degrees, XYZ euler; objects imported in quaternion mode are switched automatically) and/or scale objects, then apply. Returns before/after totals (faces, vertices, non-manifold edges, dimensions).
 
 | Parameter | CLI flag | Type | Required | Description |
 |---|---|---|---|---|
@@ -355,7 +355,8 @@ Shell the model inward with the given wall thickness to save print material. Exp
 
 | Parameter | CLI flag | Type | Required | Description |
 |---|---|---|---|---|
-| `wall_thickness_mm` | `--wall-thickness-mm` | number |  |  |
+| `wall_thickness_mm` | `--wall-thickness-mm` | number |  | Wall thickness in mm (default 2). |
+| `even_offset` | `--even-offset` | boolean |  | Blender even-thickness correction; default false because it can blow up organic meshes. Objects whose bounding box grows >2% are rolled back. |
 | `object` | `--object` | string |  | Limit to one mesh object by name (default: all mesh objects). |
 
 ## blender_setup
