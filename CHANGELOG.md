@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.2-rc.1 (pre-release, npm tag `next`)
+
+- `blender_render_preview`: camera clipping planes now scale with the scene. Models smaller than ~10 cm (typical print size) were cut by the default 0.1 m near plane and showed black holes in previews.
+
 ## 2.1.1
 
 - `blender_transform`: rotation now works on glTF/FBX-imported objects. Importers leave objects in `QUATERNION` rotation mode, where `rotation_euler` is silently ignored; the recipe switches the object to `XYZ` (preserving its current rotation) before applying the delta and reports `rotation_mode_switched`.

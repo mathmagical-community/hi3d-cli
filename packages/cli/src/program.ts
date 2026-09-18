@@ -11,7 +11,7 @@ import { registerBlenderCommands } from './blender-cmds.js';
 import { registerAuthCommands } from './auth-cmds.js';
 import { checkForUpdate } from './update-check.js';
 
-export const VERSION = '2.1.1';
+export const VERSION = '2.1.2-rc.1';
 /** npm package name used for the update hint; overridden at release build via NPM_PACKAGE_NAME */
 export const PACKAGE_NAME = NPM_PACKAGE_NAME;
 
