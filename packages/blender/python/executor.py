@@ -418,6 +418,10 @@ def op_render(out="preview", views=("iso", "front"), resolution=512, samples=32,
     sc.render.image_settings.file_format = "PNG"
     fov = cam_obj.data.angle
     dist = radius / math.sin(fov / 2) * 0.95
+    # scale the clipping planes with the scene: Blender's default clip_start of 0.1 m cuts print-sized
+    # models (a 50 mm cube sits ~0.09 m from the camera) and leaves black holes in the preview
+    cam_obj.data.clip_start = max(1e-5, dist * 0.01)
+    cam_obj.data.clip_end = max(100.0, dist * 100)
     files = []
     t = time.time()
     for v in views:

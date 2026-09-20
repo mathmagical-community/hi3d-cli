@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.2
+
+- Blender executor: a process killed from outside (kernel OOM killer on a multi-million-face repair, an operator's `kill -9`) was still reported as alive, so every later `blender_*` call was written to a dead process and hung until the 30-minute timeout. The executor now checks `signalCode` and its own exit flag, restarts on the next call, and fails fast if it is not running.
+- `blender_render_preview`: camera clipping planes now scale with the scene. Models smaller than ~10 cm (typical print size) were cut by the default 0.1 m near plane and showed black holes in previews.
+
 ## 2.1.1
 
 - `blender_transform`: rotation now works on glTF/FBX-imported objects. Importers leave objects in `QUATERNION` rotation mode, where `rotation_euler` is silently ignored; the recipe switches the object to `XYZ` (preserving its current rotation) before applying the delta and reports `rotation_mode_switched`.
