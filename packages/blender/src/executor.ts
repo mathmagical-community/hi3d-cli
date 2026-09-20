@@ -40,6 +40,7 @@ export class BlenderExecutor {
   private proc?: ChildProcess;
   private seq = 0;
   private pending = new Map<number, Pending>();
+  private exited = false;
   private ready?: Promise<Record<string, unknown>>;
   private readyInfo?: Record<string, unknown>;
   private readonly startTimeoutMs: number;
@@ -54,7 +55,9 @@ export class BlenderExecutor {
   }
 
   get alive(): boolean {
-    return !!this.proc && this.proc.exitCode === null && !this.proc.killed;
+    // signalCode: a process killed from outside (kernel OOM killer, SIGKILL by an operator) has exitCode null and
+    // killed=false — only signalCode tells; without it a dead executor looked alive and every later call hung
+    return !!this.proc && this.proc.exitCode === null && this.proc.signalCode === null && !this.proc.killed && !this.exited;
   }
   get info(): Record<string, unknown> | undefined {
     return this.readyInfo;
@@ -74,6 +77,7 @@ export class BlenderExecutor {
     } catch {
       /* logging is best effort */
     }
+    this.exited = false;
     const proc = spawn(argv[0], argv.slice(1), {
       cwd: this.cwd,
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -123,6 +127,7 @@ export class BlenderExecutor {
       });
       proc.on('exit', (code, sig) => {
         clearTimeout(t);
+        this.exited = true;
         const err = new BlenderError(`Blender executor exited (code ${code}, signal ${sig})`, 'BLENDER_START_FAILED');
         reject(err);
         for (const p of this.pending.values()) {
@@ -138,6 +143,7 @@ export class BlenderExecutor {
 
   async call<T = unknown>(op: string, args: Record<string, unknown> = {}, timeoutMs = 30 * 60 * 1000): Promise<T> {
     await this.start();
+    if (!this.alive) throw new BlenderError(`${op}: Blender executor is not running`, 'BLENDER_START_FAILED');
     this.lastUsed = Date.now();
     const id = ++this.seq;
     return new Promise<T>((resolve, reject) => {
